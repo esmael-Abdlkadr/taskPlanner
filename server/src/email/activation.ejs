@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      /* General Styles */
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, sans-serif;
+        background-color: #f9fafb;
+        margin: 0;
+        padding: 0;
+        color: #111827;
+        line-height: 1.5;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 40px auto;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+      }
+
+      /* Header */
+      .header {
+        background: linear-gradient(135deg, #5E35B1 0%, #3949AB 100%);
+        color: white;
+        text-align: center;
+        padding: 30px 20px;
+      }
+
+      .header svg {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 15px;
+      }
+
+      .header h1 {
+        font-size: 28px;
+        margin: 0;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+
+      .header p {
+        margin: 10px 0 0;
+        opacity: 0.9;
+        font-size: 16px;
+      }
+
+      /* Content */
+      .content {
+        background-color: white;
+        padding: 35px;
+      }
+
+      .content h2 {
+        font-size: 22px;
+        margin-top: 0;
+        color: #5E35B1;
+      }
+
+      .content p {
+        font-size: 16px;
+        margin-bottom: 20px;
+        color: #374151;
+      }
+
+      /* OTP Container */
+      .otp-container {
+        margin: 30px 0;
+        text-align: center;
+      }
+
+      .otp-code {
+        background-color: #f3f4f6;
+        border: 2px dashed #d1d5db;
+        border-radius: 8px;
+        padding: 15px 25px;
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: 5px;
+        color: #5E35B1;
+        display: inline-block;
+      }
+
+      .expiry-note {
+        margin-top: 15px;
+        font-size: 14px;
+        color: #6b7280;
+      }
+
+      .info-box {
+        background-color: #F3E5F5;
+        border-left: 4px solid #7E57C2;
+        padding: 15px 20px;
+        margin: 25px 0;
+        border-radius: 6px;
+      }
+
+      .info-box p {
+        margin: 0;
+        font-size: 14px;
+      }
+
+      .features {
+        margin: 30px 0;
+        padding: 0;
+      }
+
+      .feature {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 15px;
+      }
+
+      .feature-icon {
+        background-color: #EDE7F6;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        flex-shrink: 0;
+      }
+
+      .feature-icon svg {
+        width: 16px;
+        height: 16px;
+        color: #5E35B1;
+      }
+
+      .feature-text {
+        margin: 0;
+        font-size: 15px;
+      }
+
+      .btn-container {
+        text-align: center;
+        margin: 30px 0 10px;
+      }
+
+      .btn {
+        display: inline-block;
+        background-color: #5E35B1;
+        color: white;
+        text-decoration: none;
+        padding: 14px 28px;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        font-size: 16px;
+      }
+
+      .btn:hover {
+        background-color: #512DA8;
+      }
+
+      /* Footer */
+      .footer {
+        background-color: #f8fafc;
+        padding: 25px;
+        text-align: center;
+        color: #64748b;
+        font-size: 14px;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      .logo {
+        font-weight: 700;
+        color: #5E35B1;
+        margin-bottom: 10px;
+        display: block;
+        font-size: 18px;
+      }
+
+      .social-links {
+        margin: 15px 0;
+      }
+
+      .social-links a {
+        display: inline-block;
+        margin: 0 8px;
+        color: #64748b;
+      }
+    </style>
+    <title>Verify Your Email - TaskNest</title>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M3 5C3 3.89543 3.89543 3 5 3H19C20.1046 3 21 3.89543 21 5V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V5Z"
+            fill="#C5CAE9"
+            stroke="white"
+            stroke-width="2"
+          />
+          <path
+            d="M7 9L10 12L7 15"
+            stroke="white"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M12 9H17"
+            stroke="white"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <path
+            d="M12 15H17"
+            stroke="white"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+        <h1>TaskNest</h1>
+        <p>Organize tasks at any depth</p>
+      </div>
+      <div class="content">
+        <h2>Welcome to TaskNest!</h2>
+
+        <p>Hi <%= user.name %>,</p>
+
+        <p>
+          Thanks for joining TaskNest, your new home for hierarchical task management. To get started, please verify your email address with this verification code:
+        </p>
+
+        <div class="otp-container">
+          <div class="otp-code"><%= otp %></div>
+          <p class="expiry-note">This code will expire in 10 minutes</p>
+        </div>
+
+        <div class="info-box">
+          <p>
+            <strong>Important:</strong> If you didn't create a TaskNest account, please ignore this email or contact our support team.
+          </p>
+        </div>
+
+        <p>With TaskNest, you can:</p>
+
+        <div class="features">
+          <div class="feature">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 11L12 14L20 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 14L9 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M20 12V18C20 19.1046 19.1046 20 18 20H6C4.89543 20 4 19.1046 4 18V6C4 4.89543 4.89543 4 6 4H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <p class="feature-text">Create unlimited nested tasks and subtasks</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 4H5C3.89543 4 3 4.89543 3 6V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V6C21 4.89543 20.1046 4 19 4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M16 2V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M8 2V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M3 10H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M8 14H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M8 18H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M12 14H13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M12 18H13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M16 14H17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M16 18H17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <p class="feature-text">Organize with smart hierarchy and visualizations</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17 21V19C17 16.7909 15.2091 15 13 15H5C2.79086 15 1 16.7909 1 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M9 11C11.2091 11 13 9.20914 13 7C13 4.79086 11.2091 3 9 3C6.79086 3 5 4.79086 5 7C5 9.20914 6.79086 11 9 11Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M23 21V19C22.9986 17.1771 21.765 15.5857 20 15.13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M16 3.13C17.7699 3.58385 19.0078 5.18058 19.0078 7.005C19.0078 8.82942 17.7699 10.4262 16 10.88" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <p class="feature-text">Collaborate with your team on complex projects</p>
+          </div>
+        </div>
+
+        <p>We're excited to see how you'll use TaskNest to organize your work and boost your productivity!</p>
+
+        <div class="btn-container">
+          <a href="<%= process.env.FRONTEND_URL || '#' %>/verify" class="btn">Verify Email & Get Started</a>
+        </div>
+      </div>
+      <div class="footer">
+        <span class="logo">TaskNest</span>
+        <p>Organize your tasks with unlimited depth</p>
+        <div class="social-links">
+          <a href="#">Twitter</a> • <a href="#">LinkedIn</a> •
+          <a href="#">Instagram</a>
+        </div>
+        <p>
+          © <%= new Date().getFullYear() %> TaskNest. All rights reserved.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

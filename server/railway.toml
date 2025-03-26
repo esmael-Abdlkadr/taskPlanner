@@ -1,0 +1,8 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pnpm install && pnpm build"
+
+[deploy]
+startCommand = "node dist/server.js"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 90

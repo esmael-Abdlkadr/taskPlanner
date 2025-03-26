@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <%
+      var dueDateBackground = daysRemaining <= 1 ? '#FEE2E2' : (daysRemaining <= 3 ? '#FEF3C7' : '#E0E7FF');
+      var dueDateBorder = daysRemaining <= 1 ? '#EF4444' : (daysRemaining <= 3 ? '#F59E0B' : '#6366F1');
+      var dueDateColor = daysRemaining <= 1 ? '#991B1B' : (daysRemaining <= 3 ? '#92400E' : '#4338CA');
+    %>
+    <style>
+      /* stylelint-disable */
+      /* General Styles */
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, sans-serif;
+        background-color: #f9fafb;
+        margin: 0;
+        padding: 0;
+        color: #111827;
+        line-height: 1.5;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 40px auto;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+      }
+
+      /* Header */
+      .header {
+        background: linear-gradient(135deg, #5E35B1 0%, #3949AB 100%);
+        color: white;
+        text-align: center;
+        padding: 30px 20px;
+      }
+
+      .header svg {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 15px;
+      }
+
+      .header h1 {
+        font-size: 28px;
+        margin: 0;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+
+      .header p {
+        margin: 10px 0 0;
+        opacity: 0.9;
+        font-size: 16px;
+      }
+
+      /* Content */
+      .content {
+        background-color: white;
+        padding: 35px;
+      }
+
+      .content h2 {
+        font-size: 22px;
+        margin-top: 0;
+        color: #5E35B1;
+      }
+
+      .content p {
+              font-weight: 500;
+              font-size: 18px;
+              color: <%= dueDateColor %>;
+              text-align: center;
+            }
+      
+      .due-date-callout {
+        background-color: <%= dueDateBackground %>;
+        border-left: 4px solid <%= dueDateBorder %>;
+        padding: 15px 20px;
+        margin: 25px 0;
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 18px;
+        color: <%= dueDateColor %>;
+        text-align: center;
+      }
+
+      .task-box {
+        border: 1px solid #E5E7EB;
+        border-radius: 8px;
+        padding: 25px;
+        margin: 25px 0;
+        background-color: #FAFAFA;
+      }
+      
+      .task-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #111827;
+        margin-bottom: 15px;
+      }
+      
+      .task-detail {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 12px;
+      }
+      
+      .detail-icon {
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+        margin-right: 10px;
+        color: #5E35B1;
+      }
+      
+      .detail-text {
+        color: #4B5563;
+      }
+      
+      .detail-label {
+        font-weight: 500;
+        display: inline-block;
+        min-width: 80px;
+      }
+
+      .btn-container {
+        text-align: center;
+        margin: 30px 0 10px;
+      }
+
+      .btn {
+        display: inline-block;
+        background-color: #5E35B1;
+        color: white;
+        text-decoration: none;
+        padding: 14px 28px;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        font-size: 16px;
+      }
+
+      .btn:hover {
+        background-color: #512DA8;
+      }
+
+      /* Footer */
+      .footer {
+        background-color: #f8fafc;
+        padding: 25px;
+        text-align: center;
+        color: #64748b;
+        font-size: 14px;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      .logo {
+        font-weight: 700;
+        color: #5E35B1;
+        margin-bottom: 10px;
+        display: block;
+        font-size: 18px;
+      }
+
+      .social-links {
+        margin: 15px 0;
+      }
+
+      .social-links a {
+        display: inline-block;
+        margin: 0 8px;
+        color: #64748b;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M3 5C3 3.89543 3.89543 3 5 3H19C20.1046 3 21 3.89543 21 5V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V5Z"
+            fill="#C5CAE9"
+            stroke="white"
+            stroke-width="2"
+          />
+          <path
+            d="M7 9L10 12L7 15"
+            stroke="white"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M12 9H17"
+            stroke="white"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <path
+            d="M12 15H17"
+            stroke="white"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+        <h1>TaskNest</h1>
+        <p>Task Due Date Reminder</p>
+      </div>
+      <div class="content">
+        <h2>Hello <%= user.name %>,</h2>
+
+        <p>This is a reminder about a task that's due soon in your TaskNest workspace.</p>
+
+        <div class="due-date-callout">
+          <%= daysRemaining === 0 ? 'Due Today!' : 
+             (daysRemaining === 1 ? 'Due Tomorrow!' : 
+             'Due in ' + daysRemaining + ' Days!') %>
+        </div>
+
+        <div class="task-box">
+          <div class="task-title"><%= taskTitle %></div>
+          
+          <div class="task-detail">
+            <div class="detail-icon">📂</div>
+            <div class="detail-text">
+              <span class="detail-label">Workspace:</span>
+              <%= workspaceName %>
+            </div>
+          </div>
+          
+          <div class="task-detail">
+            <div class="detail-icon">📅</div>
+            <div class="detail-text">
+              <span class="detail-label">Due Date:</span>
+              <%= dueDate %>
+            </div>
+          </div>
+        </div>
+
+        <p>Click the button below to view the task details and update your progress:</p>
+
+        <div class="btn-container">
+          <a href="<%= taskUrl %>" class="btn">View Task</a>
+        </div>
+      </div>
+      <div class="footer">
+        <span class="logo">TaskNest</span>
+        <p>Organize your tasks with unlimited depth</p>
+        <p>
+          © <%= new Date().getFullYear() %> TaskNest. All rights reserved.
+        </p>
+        <p>Generated on: <%= currentDate %> UTC</p>
+      </div>
+    </div>
+  </body>
+</html>
