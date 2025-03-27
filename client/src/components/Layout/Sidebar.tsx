@@ -2,15 +2,18 @@ import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   PlusIcon,
-  FolderIcon,
-  InboxIcon,
+  LayoutDashboardIcon,
+  CheckSquareIcon,
   CalendarIcon,
-  ClockIcon,
   StarIcon,
-  TagIcon,
   SettingsIcon,
   HelpCircleIcon,
-  Loader,
+  FolderIcon,
+  FolderOpenIcon,
+  ChevronRightIcon,
+  BriefcaseIcon,
+  UserPlusIcon,
+  Users2Icon,
 } from "lucide-react";
 
 // Import our custom components
@@ -21,6 +24,7 @@ import { Badge } from "../ui/badge";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import { CreateWorkspaceDialog } from "../../features/workspace/component/CreateWorkspaceDialog";
 import { useWorkspaces } from "../../hooks/useWorkspace";
+import { Dropdown } from "../ui/dropdown";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -31,19 +35,32 @@ const Sidebar = ({ collapsed, toggleCollapse }: SidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
-  const { setActiveWorkspace } = useWorkspaceStore();
+  const { activeWorkspace, setActiveWorkspace } = useWorkspaceStore();
 
   // Fetch workspaces using our custom hook
   const { data: workspaces, isLoading } = useWorkspaces();
 
   // Helper to check if a route is active
   const isRouteActive = (path: string) => {
+    // Exact match for dashboard
     if (path === "/dashboard" && location.pathname === "/dashboard") {
       return true;
     }
+    
+    // Exact match for specific routes
+    if (path === location.pathname) {
+      return true;
+    }
 
-    if (path.startsWith("/workspaces/")) {
+    // Special case for workspace routes
+    if (path.startsWith("/workspaces/") && path !== "/workspaces/all") {
       return location.pathname.startsWith(path);
+    }
+    
+    // Special case for workspaces listing
+    if (path === "/workspaces" || path === "/workspaces/all") {
+      return location.pathname === "/workspaces" || 
+             location.pathname === "/workspaces/all";
     }
 
     return false;
@@ -55,24 +72,72 @@ const Sidebar = ({ collapsed, toggleCollapse }: SidebarProps) => {
     navigate(`/workspaces/${workspace._id}`);
   };
 
-  const renderSidebarItem = (
+  // Navigation items
+  const primaryNavItems = [
+    { 
+      label: "Dashboard", 
+      path: "/dashboard", 
+      icon: <LayoutDashboardIcon className="h-5 w-5" /> 
+    },
+    { 
+      label: "Tasks", 
+      path: "/tasks", 
+      icon: <CheckSquareIcon className="h-5 w-5" /> 
+    },
+    { 
+      label: "Favorites", 
+      path: "/favorites", 
+      icon: <StarIcon className="h-5 w-5" />,
+      highlight: true
+    },
+    { 
+      label: "Calendar", 
+      path: "/calendar", 
+      icon: <CalendarIcon className="h-5 w-5" /> 
+    },
+  ];
+
+  const footerNavItems = [
+    { 
+      label: "Settings", 
+      path: "/settings", 
+      icon: <SettingsIcon className="h-5 w-5" /> 
+    },
+    { 
+      label: "Help & Support", 
+      path: "/help", 
+      icon: <HelpCircleIcon className="h-5 w-5" /> 
+    }
+  ];
+
+  const renderSidebarItem = (item: {
     label: string,
     path: string,
     icon: React.ReactNode,
-    badge?: number | undefined
-  ) => {
+    badge?: number | undefined,
+    highlight?: boolean
+  }) => {
+    const { label, path, icon, badge, highlight } = item;
     const isActive = isRouteActive(path);
 
     return (
-      <Tooltip content={collapsed ? label : ""} side="right">
+      <Tooltip key={path} content={collapsed ? label : ""} side="right">
         <Link to={path}>
           <Button
             variant={isActive ? "secondary" : "ghost"}
-            className={`w-full justify-start gap-3 font-normal ${
-              collapsed ? "justify-center px-2" : ""
-            }`}
+            className={`
+              w-full justify-start gap-3 font-normal 
+              ${collapsed ? "justify-center px-2" : ""} 
+              ${highlight && !isActive ? "text-indigo-600 dark:text-indigo-400" : ""}
+            `}
           >
-            {icon}
+            {highlight && !isActive ? (
+              <span className="relative">
+                {icon}
+                <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-indigo-500"></span>
+              </span>
+            ) : icon}
+            
             {!collapsed && (
               <>
                 <span className="flex-1 text-left">{label}</span>
@@ -153,53 +218,54 @@ const Sidebar = ({ collapsed, toggleCollapse }: SidebarProps) => {
 
         {/* Primary navigation */}
         <div className="flex flex-col gap-1 px-3 py-2">
-          {renderSidebarItem(
-            "Dashboard",
-            "/dashboard",
-            <InboxIcon className="h-5 w-5" />,
-            0
-          )}
-          {renderSidebarItem(
-            "Calendar",
-            "/calendar",
-            <CalendarIcon className="h-5 w-5" />
-          )}
-          {renderSidebarItem(
-            "Today",
-            "/today",
-            <ClockIcon className="h-5 w-5" />,
-            3
-          )}
-          {renderSidebarItem(
-            "Important",
-            "/important",
-            <StarIcon className="h-5 w-5" />,
-            2
-          )}
-          {renderSidebarItem("Tags", "/tags", <TagIcon className="h-5 w-5" />)}
+          {primaryNavItems.map(item => renderSidebarItem(item))}
         </div>
 
         {/* Workspaces section */}
         <div className="mt-2 px-3">
-          <div
-            className={`flex items-center justify-between py-2 ${
-              collapsed ? "justify-center" : ""
-            }`}
-          >
+          <div className={`flex items-center justify-between py-2 ${collapsed ? "justify-center" : ""}`}>
             {!collapsed && (
-              <span className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+              <Link to="/workspaces" className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
                 Workspaces
-              </span>
+              </Link>
             )}
-            <Tooltip content="Create Workspace" side="right">
-              <Button
-                variant="ghost"
-                className="h-7 w-7 p-0 flex items-center justify-center"
-                onClick={() => setShowCreateWorkspace(true)}
-              >
-                <PlusIcon className="h-4 w-4" />
-              </Button>
-            </Tooltip>
+            
+            {/* Workspace Management Dropdown */}
+            <Dropdown
+              trigger={
+                <Button
+                  variant="ghost"
+                  className="h-7 w-7 p-0 flex items-center justify-center"
+                  title="Workspace options"
+                >
+                  <PlusIcon className="h-4 w-4" />
+                </Button>
+              }
+              items={[
+                {
+                  label: "Create Workspace",
+                  icon: <PlusIcon className="mr-2 h-4 w-4" />,
+                  onClick: () => setShowCreateWorkspace(true)
+                },
+                {
+                  label: "Manage Workspaces",
+                  icon: <FolderIcon className="mr-2 h-4 w-4" />,
+                  onClick: () => navigate('/workspaces')
+                },
+                {
+                  label: "Manage Members",
+                  icon: <Users2Icon className="mr-2 h-4 w-4" />,
+                  onClick: () => {
+                    if (activeWorkspace) {
+                      navigate(`/workspaces/${activeWorkspace._id}/settings`);
+                    } else {
+                      navigate('/workspaces');
+                    }
+                  },
+                  disabled: !activeWorkspace
+                },
+              ]}
+            />
           </div>
 
           <div className="mt-1 space-y-1">
@@ -220,18 +286,19 @@ const Sidebar = ({ collapsed, toggleCollapse }: SidebarProps) => {
                 ))
             ) : workspaces && workspaces.length > 0 ? (
               // Actual workspaces
-              workspaces.map((workspace) => (
+              workspaces.map((workspace) => {
+                const isActive = location.pathname.includes(`/workspaces/${workspace._id}`);
+                const isPersonal = workspace.isPersonal;
+                const iconClassName = isActive ? "h-5 w-5 text-white" : "h-5 w-5";
+                
+                return (
                 <Tooltip
                   key={workspace._id}
                   content={collapsed ? workspace.name : ""}
                   side="right"
                 >
                   <Button
-                    variant={
-                      location.pathname.includes(`/workspaces/${workspace._id}`)
-                        ? "secondary"
-                        : "ghost"
-                    }
+                    variant={isActive ? "secondary" : "ghost"}
                     className={`w-full justify-start gap-3 font-normal ${
                       collapsed ? "justify-center px-2" : ""
                     }`}
@@ -239,19 +306,36 @@ const Sidebar = ({ collapsed, toggleCollapse }: SidebarProps) => {
                   >
                     {/* Workspace icon or color indicator */}
                     <div
-                      className="h-5 w-5 rounded"
+                      className={`h-5 w-5 rounded flex items-center justify-center ${
+                        isPersonal ? "bg-blue-500" : ""
+                      }`}
                       style={{
-                        backgroundColor: workspace.color || "#6366F1",
+                        backgroundColor: isPersonal ? undefined : (workspace.color || "#6366F1")
                       }}
-                    />
+                    >
+                      {isPersonal && <BriefcaseIcon className={iconClassName} size={12} />}
+                    </div>
+                    
                     {!collapsed && (
-                      <span className="flex-1 truncate text-left">
-                        {workspace.name}
-                      </span>
+                      <>
+                        <span className="flex-1 truncate text-left">
+                          {workspace.name}
+                        </span>
+                        {isPersonal && (
+                          <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 px-1.5 py-0.5 rounded-full">
+                            Personal
+                          </span>
+                        )}
+                        {workspace.role && workspace.role !== 'owner' && (
+                          <span className="text-xs bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded-full">
+                            {workspace.role}
+                          </span>
+                        )}
+                      </>
                     )}
                   </Button>
                 </Tooltip>
-              ))
+              )})
             ) : (
               // No workspaces state
               <div
@@ -275,16 +359,7 @@ const Sidebar = ({ collapsed, toggleCollapse }: SidebarProps) => {
 
         {/* Push remaining items to bottom */}
         <div className="mt-auto px-3 pb-4">
-          {renderSidebarItem(
-            "Settings",
-            "/settings",
-            <SettingsIcon className="h-5 w-5" />
-          )}
-          {renderSidebarItem(
-            "Help & Support",
-            "/help",
-            <HelpCircleIcon className="h-5 w-5" />
-          )}
+          {footerNavItems.map(item => renderSidebarItem(item))}
         </div>
       </div>
 

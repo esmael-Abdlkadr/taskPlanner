@@ -1,163 +1,146 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useCreateWorkspace } from "../../../hooks/useWorkspace";
-
-// Import our custom components
-import Modal, { ModalBody, ModalFooter } from "../../../components/ui/Modal";
-import {
-  Form,
-  FormError,
-  FormItem,
-  FormLabel,
-} from "../../../components/ui/form";
-import Input from "../../../components/ui/input";
-import Button from "../../../components/ui/button";
-import Textarea from "../../../components/ui/textarea";
-
-// Array of workspace color options
-const workspaceColors = [
-  "#6366F1", // Indigo
-  "#8B5CF6", // Violet
-  "#EC4899", // Pink
-  "#F43F5E", // Rose
-  "#EF4444", // Red
-  "#F97316", // Orange
-  "#F59E0B", // Amber
-  "#10B981", // Emerald
-  "#14B8A6", // Teal
-  "#0EA5E9", // Sky
-  "#3B82F6", // Blue
-  "#6B7280", // Gray
-];
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Plus, X } from 'lucide-react';
+import Button from '../../../components/ui/button';
+import Input from '../../../components/ui/input';
+import Textarea from '../../../components/ui/textarea';
+import { useCreateWorkspace } from '../../../hooks/useWorkspace';
+import { ColorPicker } from '../../../components/common/ColorPicker'; 
+import { IconPicker } from '../../../components/common/IconPicker'; 
 
 interface CreateWorkspaceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-// Form validation schema
-const createWorkspaceSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Workspace name is required")
-    .max(50, "Name cannot exceed 50 characters"),
-  description: z
-    .string()
-    .max(200, "Description cannot exceed 200 characters")
-    .optional(),
-  color: z.string().min(1, "Please select a color"),
+const workspaceSchema = z.object({
+  name: z.string().min(1, "Workspace name is required").max(50, "Name too long"),
+  description: z.string().max(500, "Description too long").optional(),
 });
 
-type CreateWorkspaceFormValues = z.infer<typeof createWorkspaceSchema>;
+type FormValues = z.infer<typeof workspaceSchema>;
 
-export const CreateWorkspaceDialog = ({
-  open,
-  onOpenChange,
-}: CreateWorkspaceDialogProps) => {
+export const CreateWorkspaceDialog = ({ open, onOpenChange }: CreateWorkspaceDialogProps) => {
+  const [selectedIcon, setSelectedIcon] = useState('folder');
+  const [selectedColor, setSelectedColor] = useState('#6366F1');
+  
   const createWorkspace = useCreateWorkspace();
-  const [selectedColor, setSelectedColor] = useState(workspaceColors[0]);
-
+  
   const {
     register,
     handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm<CreateWorkspaceFormValues>({
-    resolver: zodResolver(createWorkspaceSchema),
+    reset,
+    formState: { errors, isSubmitting }
+  } = useForm<FormValues>({
+    resolver: zodResolver(workspaceSchema),
     defaultValues: {
-      name: "",
-      description: "",
-      color: workspaceColors[0],
-    },
+      name: '',
+      description: ''
+    }
   });
-
-  // Set color in form when selected
-  const handleColorSelect = (color: string) => {
-    setSelectedColor(color);
-    setValue("color", color);
+  
+  const onSubmit = async (data: FormValues) => {
+    try {
+      await createWorkspace.mutateAsync({
+        ...data,
+        icon: selectedIcon,
+        color: selectedColor
+      });
+      reset();
+      onOpenChange(false);
+    } catch (error) {
+      console.error(error);
+    }
   };
-
-  const onSubmit = async (data: CreateWorkspaceFormValues) => {
-    await createWorkspace.mutateAsync(
-      {
-        name: data.name,
-        description: data.description || "",
-        color: data.color,
-      },
-      {
-        onSuccess: () => {
-          onOpenChange(false);
-        },
-      }
-    );
+  
+  const handleClose = () => {
+    reset();
+    onOpenChange(false);
   };
-
+  
+  if (!open) return null;
+  
   return (
-    <Modal
-      isOpen={open}
-      onClose={() => onOpenChange(false)}
-      title="Create New Workspace"
-    >
-      <Form onSubmit={handleSubmit(onSubmit)}>
-        <ModalBody className="space-y-4">
-          <FormItem>
-            <FormLabel required>Workspace Name</FormLabel>
-            <Input
-              placeholder="Enter workspace name"
-              error={errors.name?.message}
-              {...register("name")}
-            />
-          </FormItem>
-
-          <FormItem>
-            <FormLabel>Description</FormLabel>
-            <Textarea
-              placeholder="Describe the purpose of this workspace"
-              rows={3}
-              error={errors.description?.message}
-              {...register("description")}
-            />
-          </FormItem>
-
-          <FormItem>
-            <FormLabel required>Color</FormLabel>
-            <input type="hidden" {...register("color")} value={selectedColor} />
-            <div className="grid grid-cols-6 gap-2 mt-2">
-              {workspaceColors.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  className={`h-8 w-8 rounded-full transition-all ${
-                    selectedColor === color
-                      ? "ring-2 ring-offset-2 ring-gray-400 dark:ring-gray-600"
-                      : "hover:scale-110"
-                  }`}
-                  style={{ backgroundColor: color }}
-                  onClick={() => handleColorSelect(color)}
-                />
-              ))}
-            </div>
-            {errors.color?.message && (
-              <FormError>{errors.color.message}</FormError>
-            )}
-          </FormItem>
-        </ModalBody>
-
-        <ModalFooter>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-md p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Create New Workspace</h2>
           <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={handleClose}
           >
-            Cancel
+            <X className="h-4 w-4" />
           </Button>
-          <Button type="submit" isLoading={createWorkspace.isPending}>
-            {createWorkspace.isPending ? "Creating..." : "Create Workspace"}
-          </Button>
-        </ModalFooter>
-      </Form>
-    </Modal>
+        </div>
+        
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div>
+            <label htmlFor="name" className="block font-medium mb-1">
+              Name <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="name"
+              placeholder="Enter workspace name"
+              {...register('name')}
+              error={errors.name?.message}
+              autoFocus
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="description" className="block font-medium mb-1">
+              Description
+            </label>
+            <Textarea
+              id="description"
+              placeholder="What's this workspace for?"
+              rows={3}
+              {...register('description')}
+              error={errors.description?.message}
+            />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-medium mb-1">Icon</label>
+              <IconPicker
+                selectedIcon={selectedIcon} 
+                onSelectIcon={setSelectedIcon}
+              />
+            </div>
+            
+            <div>
+              <label className="block font-medium mb-1">Color</label>
+              <ColorPicker
+                color={selectedColor}
+                onChange={setSelectedColor}
+              />
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              isLoading={isSubmitting}
+              leftIcon={<Plus className="h-4 w-4" />}
+            >
+              Create Workspace
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 };

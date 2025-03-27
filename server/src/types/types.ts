@@ -1,5 +1,5 @@
 import { Document, Types } from "mongoose";
-import { Schema } from "zod";
+
 
 export interface IUser extends Document {
   firstName: string;
@@ -26,7 +26,7 @@ export interface IUser extends Document {
 export interface ITask extends Document {
   title: string;
   description?: string;
-  status: "not-started" | "in-progress" | "completed" | "archived";
+  status: "todo" | "in-progress" | "completed" | "archived";
   priority: "low" | "medium" | "high" | "urgent";
   parentId: ITask["_id"] | null;
   path: ITask["_id"][];

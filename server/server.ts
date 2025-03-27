@@ -3,7 +3,7 @@ import app from "./app";
 import { logger } from "./config/logger";
 import http from "http";
 import { connectDb, disconnectDb } from "./config/db";
-import { seedDefaultCategories } from "./seed/categorySeeder";
+
 
 dotenv.config();
 
@@ -14,10 +14,6 @@ const startServer = async () => {
     // Connect to database
     await connectDb();
     
-    // Run seeders after DB connection
-    logger.info("Running database seeders...");
-    await seedDefaultCategories();
-    logger.info("Database seeding completed");
 
     // Start the server
     const server = http.createServer(app);

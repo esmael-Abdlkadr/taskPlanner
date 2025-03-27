@@ -34,11 +34,11 @@ export const useTask = (taskId: string) => {
   });
 };
 
-export const useSubtasks = (taskId: string) => {
+export const useSubtasks = (parentId: string) => {
   return useQuery({
-    queryKey: ["subtasks", taskId],
-    queryFn: () => taskService.getSubtasks(taskId),
-    enabled: !!taskId,
+    queryKey: ["subtasks", parentId],
+    queryFn: () => taskService.getSubtasks(parentId),
+    enabled: !!parentId,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 };

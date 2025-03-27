@@ -37,7 +37,7 @@ const Dashboard = () => {
   const personalWorkspace = workspaces?.find((ws) => ws.isPersonal);
   const defaultWorkspaceId = personalWorkspace?._id || workspaces?.[0]?._id;
 
-  console.log("defaultWorkspaceId", defaultWorkspaceId);
+
 
   // Fetch tasks for the first workspace - ONLY when we have a valid workspace ID
   const workspaceTasks = useWorkspaceTasks(defaultWorkspaceId || undefined);

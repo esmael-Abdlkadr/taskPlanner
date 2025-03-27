@@ -7,9 +7,9 @@ export const categoryService = {
     const response = (await apiRequest({
       method: "GET",
       url: "/categories",
-    })) as { data: { data: { categories: Category[] } } };
+    })) as { data: { categories: Category[] } };
 
-    return response.data.data.categories;
+    return response.data.categories;
   },
 
   // Create a new category
@@ -23,9 +23,9 @@ export const categoryService = {
       method: "POST",
       url: "/categories",
       data: categoryData,
-    })) as { data: { data: { category: Category } } };
+    })) as { data: {  category: Category } };
 
-    return response.data.data.category;
+    return response.data.category;
   },
 
   // Update an existing category
@@ -42,9 +42,9 @@ export const categoryService = {
       method: "PATCH",
       url: `/categories/${categoryId}`,
       data: categoryData,
-    })) as { data: { data: { category: Category } } };
+    })) as { data: {  category: Category } };
 
-    return response.data.data.category;
+    return response.data.category;
   },
 
   // Delete a category

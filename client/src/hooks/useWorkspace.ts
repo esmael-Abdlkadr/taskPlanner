@@ -3,6 +3,7 @@ import {
   workspaceService,
   CreateWorkspaceDto,
   UpdateWorkspaceDto,
+  Workspace
 } from "../services/workspaceService";
 import { toast } from "react-hot-toast";
 import { useWorkspaceStore } from "../store/workspaceStore";
@@ -34,68 +35,74 @@ export const useCreateWorkspace = () => {
   return useMutation({
     mutationFn: (data: CreateWorkspaceDto) =>
       workspaceService.createWorkspace(data),
-    onSuccess: (data) => {
+    onSuccess: (workspace) => {
       queryClient.invalidateQueries({ queryKey: ["workspaces"] });
-      queryClient.invalidateQueries({ queryKey: ["user-workspaces"] });
-      setActiveWorkspace({
-        _id: data._id,
-        name: data.name,
-        color: data.color,
-        icon: data.icon,
-      });
+      
+      // Update active workspace if this is the first workspace
+      if (workspace) {
+        setActiveWorkspace(workspace);
+      }
+      
       toast.success("Workspace created successfully");
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast.error(error.message || "Failed to create workspace");
     },
   });
 };
 
 // Update an existing workspace
-export const useUpdateWorkspace = (workspaceId: string) => {
+export const useUpdateWorkspace = () => {
   const queryClient = useQueryClient();
   const { updateActiveWorkspace } = useWorkspaceStore();
 
   return useMutation({
-    mutationFn: (data: UpdateWorkspaceDto) =>
-      workspaceService.updateWorkspace(workspaceId, data),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["workspace", workspaceId] });
+    mutationFn: ({ id, data }: { id: string; data: UpdateWorkspaceDto }) =>
+      workspaceService.updateWorkspace(id, data),
+    onSuccess: (workspace) => {
+      queryClient.invalidateQueries({ queryKey: ["workspace", workspace._id] });
       queryClient.invalidateQueries({ queryKey: ["workspaces"] });
-      queryClient.invalidateQueries({ queryKey: ["user-workspaces"] });
-
-      updateActiveWorkspace({
-        _id: data._id,
-        name: data.name,
-        color: data.color,
-        icon: data.icon,
-      });
-
+      
+      // Update the active workspace info if it's the current one
+      updateActiveWorkspace(workspace);
+      
       toast.success("Workspace updated successfully");
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast.error(error.message || "Failed to update workspace");
     },
   });
 };
 
-// Delete a workspace
-export const useDeleteWorkspace = () => {
+// Archive a workspace
+export const useArchiveWorkspace = () => {
   const queryClient = useQueryClient();
+  const { setActiveWorkspace } = useWorkspaceStore();
 
   return useMutation({
     mutationFn: (workspaceId: string) =>
-      workspaceService.deleteWorkspace(workspaceId),
-    onSuccess: () => {
+      workspaceService.archiveWorkspace(workspaceId),
+    onSuccess: (_, workspaceId) => {
       queryClient.invalidateQueries({ queryKey: ["workspaces"] });
-      queryClient.invalidateQueries({ queryKey: ["user-workspaces"] });
-      toast.success("Workspace deleted successfully");
+      
+      // Get other workspaces to select a new active one if needed
+      queryClient.fetchQuery<Workspace[]>({ queryKey: ["workspaces"] })
+        .then((workspaces: Workspace[] | undefined) => {
+          if (workspaces && workspaces.length > 0) {
+            setActiveWorkspace(workspaces[0]);
+          }
+        });
+      
+      toast.success("Workspace archived successfully");
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to delete workspace");
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to archive workspace");
     },
   });
 };
+
+// Delete workspace alias (for backward compatibility)
+export const useDeleteWorkspace = useArchiveWorkspace;
 
 // Get workspace members
 export const useWorkspaceMembers = (workspaceId: string) => {
@@ -120,7 +127,7 @@ export const useAddWorkspaceMember = (workspaceId: string) => {
       });
       toast.success("Member added successfully");
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast.error(error.message || "Failed to add member");
     },
   });
@@ -139,7 +146,7 @@ export const useUpdateMemberRole = (workspaceId: string) => {
       });
       toast.success("Member role updated");
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast.error(error.message || "Failed to update role");
     },
   });
@@ -158,7 +165,7 @@ export const useRemoveWorkspaceMember = (workspaceId: string) => {
       });
       toast.success("Member removed successfully");
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast.error(error.message || "Failed to remove member");
     },
   });

@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only server.ts",
     "start": "node dist/server.js",
-    "seed": "ts-node seed/categorySeeder.ts",
     "build": "tsc && npm run copy-templates",
     "copy-templates": "mkdir -p dist/src/email && cp -r src/email/*.ejs dist/src/email/",
     "build:prod": "tsc && npm run copy-templates && (pnpm sentry:sourcemaps || echo 'Skipping Sentry sourcemaps')"

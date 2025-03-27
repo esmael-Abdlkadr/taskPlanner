@@ -13,18 +13,18 @@ import swaggerSpec from "./swaggerOption";
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// Simplified CORS configuration that works with curl and Swagger
+app.use(cors({
+  origin: true, // Allow all origins
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.get("/swagger.json", (req, res) => {
-  res.setHeader("Content-Type", "application/json");
-  res.send(swaggerSpec);
-});
-
-// Swagger documentation
+// Remove duplicate Swagger setup
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get("/swagger.json", (req, res) => {
   res.setHeader("Content-Type", "application/json");

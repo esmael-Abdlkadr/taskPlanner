@@ -14,8 +14,8 @@ const taskSchema = new Schema<ITask>(
     },
     status: {
       type: String,
-      enum: ["not-started", "in-progress", "completed", "archived"],
-      default: "not-started",
+      enum: ["todo", "in-progress", "completed", "archived"],
+      default: "todo",
     },
     priority: {
       type: String,

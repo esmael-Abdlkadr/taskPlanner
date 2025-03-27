@@ -28,7 +28,6 @@ export const getTasks = asyncHandler(
     } = req.query;
     const userId = req.user?._id;
 
-    console.log("workspacId", workspaceId);
     if (!userId) {
       return next(new HttpError("Authentication required", 401));
     }
@@ -111,7 +110,7 @@ export const getTasks = asyncHandler(
       // Count total for pagination
       const total = await Task.countDocuments(conditions);
 
-      console.log("tasks", tasks);
+
 
       res.status(200).json({
         status: "success",
@@ -221,7 +220,7 @@ export const createTask = asyncHandler(
     const {
       title,
       description,
-      status = "not-started",
+      status = "todo",
       priority = "medium",
       parentId,
       workspaceId,
@@ -861,6 +860,40 @@ export const toggleTaskCompletion = asyncHandler(
     } catch (error) {
       console.error("Error updating task completion status:", error);
       return next(new HttpError("Failed to update task", 500));
+    }
+  }
+);
+
+
+
+export const getSubtasks = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { parentId } = req.params;
+    const userId = req.user?._id;
+
+
+    
+    if (!userId) {
+      return next(new HttpError("Authentication required", 401));
+    }
+
+    if (!parentId) {
+      return next(new HttpError("Parent task ID is required", 400));
+    }
+
+    try {
+      // Find all tasks that have this parentId
+      const subtasks = await Task.find({ parentId })
+        .sort({ position: 1 })
+        .populate("assigneeId", "firstName lastName avatar");
+
+      res.status(200).json({
+        status: "success",
+        data: subtasks,
+      });
+    } catch (error) {
+      console.error("Error fetching subtasks:", error);
+      return next(new HttpError("Failed to fetch subtasks", 500));
     }
   }
 );

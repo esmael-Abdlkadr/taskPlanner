@@ -32,30 +32,30 @@ export const taskService = {
 
   // Get a specific task by ID
   getTaskById: async (taskId: string) => {
-    const response = await apiRequest<{ data: { data: Task } }>({
+    const response = (await apiRequest<{ data: { data: Task } }>({
       method: "GET",
       url: `/tasks/${taskId}`,
-    });
+    })) as { data: { data: Task } };
 
-    return response.data.data;
+    return response.data;
   },
   toggleFavorite: async (taskId: string) => {
-    const response = await apiRequest<{ data: { data: { task: Task } } }>({
+    const response = await apiRequest<{ data: { task: Task  } }>({
       method: "POST",
       url: `/tasks/${taskId}/favorite`,
     });
 
-    return response.data.data.task;
+    return response.data.task;
   },
 
   // Get subtasks of a task
-  getSubtasks: async (taskId: string) => {
+  getSubtasks: async (parentId: string) => {
     const response = await apiRequest<{ data: { data: Task[] } }>({
       method: "GET",
-      url: `/tasks/${taskId}/subtasks`,
+      url: `/tasks/${parentId}/subtasks`,
     });
 
-    return response.data.data;
+    return response.data;
   },
 
   // Create a new task
@@ -66,18 +66,19 @@ export const taskService = {
       data: taskData,
     });
 
-    return response.data.data.task;
+    return response.data.data?.task;
   },
 
   // Update an existing task
   updateTask: async (taskId: string, taskData: UpdateTaskDto) => {
-    const response = await apiRequest<{ data: { data: { task: Task } } }>({
-      method: "PATCH",
+    const response = await apiRequest<{ data:  { task: Task  } }>({
+      method: "PUT",
       url: `/tasks/${taskId}`,
       data: taskData,
     });
+    console.log("taskid",taskId)
 
-    return response.data.data.task;
+    return response.data.task;
   },
 
   // Delete a task
@@ -99,13 +100,13 @@ export const taskService = {
       position?: number;
     }
   ) => {
-    const response = await apiRequest<{ data: { data: { task: Task } } }>({
+    const response = await apiRequest<{ data: { task: Task  } }>({
       method: "POST",
       url: `/tasks/${taskId}/move`,
       data: options,
     });
 
-    return response.data.data.task;
+    return response.data.task;
   },
 
   // Get the path for a task (breadcrumb hierarchy)
@@ -137,4 +138,14 @@ export const taskService = {
   reopenTask: async (taskId: string) => {
     return taskService.toggleTaskCompletion(taskId, false);
   },
+
+  getTaskHierarchy: async (taskId: string) => {
+    const response = await apiRequest<{ data: any }>({
+      method: "GET",
+      url: `/tasks/${taskId}/hierarchy`,
+    });
+    return response.data;
+  },
+  
+
 };

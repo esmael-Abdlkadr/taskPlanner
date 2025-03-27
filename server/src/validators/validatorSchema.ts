@@ -18,7 +18,7 @@ export const createTaskSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   status: z
-    .enum(["not-started", "in-progress", "completed", "archived"])
+    .enum(["todo", "in-progress", "completed", "archived"])
     .optional(),
   priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
   parentId: z.string().optional().nullable(),

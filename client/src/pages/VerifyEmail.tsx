@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useVerifyOtp, useRequestNewOtp } from "../hooks/useAuth";
 import { motion } from "framer-motion";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
+import  Button  from "../components/ui/button";
+import  Input  from "../components/ui/input";
 import { Loader, CheckCircle, ArrowLeft } from "lucide-react";
 
 const VerifyEmail = () => {

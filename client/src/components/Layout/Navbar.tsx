@@ -61,26 +61,7 @@ const Navbar = () => {
         </div>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6">
-          <Link
-            to="/features"
-            className="text-sm font-medium transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
-          >
-            Features
-          </Link>
-          <Link
-            to="/pricing"
-            className="text-sm font-medium transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
-          >
-            Pricing
-          </Link>
-          <Link
-            to="/about"
-            className="text-sm font-medium transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
-          >
-            About
-          </Link>
-        </nav>
+
 
         <div className="hidden md:flex items-center gap-4">
           {isAuthenticated ? (
@@ -134,15 +115,15 @@ const Navbar = () => {
               </Link>
               <div className="flex flex-col space-y-3 pt-4">
                 {isAuthenticated ? (
-                  <Button asChild className="w-full">
+                  <Button  className="w-full">
                     <Link to="/dashboard">Dashboard</Link>
                   </Button>
                 ) : (
                   <>
-                    <Button variant="outline" asChild className="w-full">
+                    <Button variant="outline"  className="w-full">
                       <Link to="/login">Sign In</Link>
                     </Button>
-                    <Button asChild className="w-full">
+                    <Button  className="w-full">
                       <Link to="/signup">Sign Up</Link>
                     </Button>
                   </>

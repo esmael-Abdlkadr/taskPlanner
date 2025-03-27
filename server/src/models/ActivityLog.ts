@@ -31,7 +31,10 @@ const activityLogSchema = new Schema<IActivityLog>(
         "add_tag", 
         "remove_tag",
         "join",
-        "leave"
+        "leave",
+        "favorite",   
+        "unfavorite"   
+        
       ],
       required: true,
     },

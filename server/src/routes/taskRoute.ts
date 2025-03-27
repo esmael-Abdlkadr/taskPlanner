@@ -9,6 +9,7 @@ import {
   getTaskPath,
   toggleTaskCompletion,
   toggleFavorite,
+  getSubtasks,
 } from "../controllers/taskController";
 import { protect } from "../middleware/authMiddleware";
 
@@ -16,13 +17,7 @@ const router = express.Router();
 router.get("/workspaces/:workspaceId/tasks", protect, getTasks);
 router.post("/tasks", protect, createTask);
 router.get("/tasks/:id", protect, getTask);
-router.patch("/tasks/:id", protect, updateTask);
-router.get("/tasks/:id/subtasks", protect, (req, res, next) => {
-  // Redirect to getTasks with parentId parameter
-  req.query.parentId = req.params.id;
-  return getTasks(req, res, next);
-});
-
+router.put("/tasks/:id", protect, updateTask);
 router.delete("/tasks/:id", protect, deleteTask);
 
 router.post("/tasks/:id/move", protect, moveTask);
@@ -30,6 +25,8 @@ router.get("/tasks/:id/path", protect, getTaskPath);
 router.post("/tasks/:id/complete", protect, toggleTaskCompletion);
 
 router.post("/tasks/:id/favorite", protect, toggleFavorite);
+
+router.get("/tasks/:parentId/subtasks", protect, getSubtasks);
 /**
  * @swagger
  * /api/workspaces/{workspaceId}/tasks:
@@ -72,6 +69,16 @@ router.post("/tasks/:id/favorite", protect, toggleFavorite);
  *         schema:
  *           type: string
  *         description: Search in title and description
+ *       - in: query
+ *         name: categoryId
+ *         schema:
+ *           type: string
+ *         description: Filter by category ID
+ *       - in: query
+ *         name: favorites
+ *         schema:
+ *           type: string
+ *         description: Filter for favorite tasks if set to "true"
  *       - in: query
  *         name: page
  *         schema:
@@ -258,7 +265,7 @@ router.post("/tasks/:id/favorite", protect, toggleFavorite);
 
 /**
  * @swagger
- * /api/tasks/{id}/subtasks:
+ * /api/tasks/{parentId}/subtasks:
  *   get:
  *     summary: Get subtasks for a task
  *     tags: [Tasks]
@@ -369,6 +376,31 @@ router.post("/tasks/:id/favorite", protect, toggleFavorite);
  *     responses:
  *       200:
  *         description: Task completion status updated
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Task not found
+ */
+
+/**
+ * @swagger
+ * /api/tasks/{id}/favorite:
+ *   post:
+ *     summary: Toggle favorite status for a task
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Task added to or removed from favorites successfully
  *       400:
  *         description: Invalid input
  *       401:
