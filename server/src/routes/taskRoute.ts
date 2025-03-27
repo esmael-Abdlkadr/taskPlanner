@@ -1,5 +1,5 @@
-import express from 'express';
-import { 
+import express from "express";
+import {
   getTasks,
   getTask,
   createTask,
@@ -7,12 +7,29 @@ import {
   deleteTask,
   moveTask,
   getTaskPath,
-  toggleTaskCompletion
-} from '../controllers/taskController';
-import { protect } from '../middleware/authMiddleware';
+  toggleTaskCompletion,
+  toggleFavorite,
+} from "../controllers/taskController";
+import { protect } from "../middleware/authMiddleware";
 
 const router = express.Router();
+router.get("/workspaces/:workspaceId/tasks", protect, getTasks);
+router.post("/tasks", protect, createTask);
+router.get("/tasks/:id", protect, getTask);
+router.patch("/tasks/:id", protect, updateTask);
+router.get("/tasks/:id/subtasks", protect, (req, res, next) => {
+  // Redirect to getTasks with parentId parameter
+  req.query.parentId = req.params.id;
+  return getTasks(req, res, next);
+});
 
+router.delete("/tasks/:id", protect, deleteTask);
+
+router.post("/tasks/:id/move", protect, moveTask);
+router.get("/tasks/:id/path", protect, getTaskPath);
+router.post("/tasks/:id/complete", protect, toggleTaskCompletion);
+
+router.post("/tasks/:id/favorite", protect, toggleFavorite);
 /**
  * @swagger
  * /api/workspaces/{workspaceId}/tasks:
@@ -75,7 +92,6 @@ const router = express.Router();
  *       404:
  *         description: Workspace not found
  */
-router.get('/workspaces/:workspaceId/tasks', protect, getTasks);
 
 /**
  * @swagger
@@ -133,7 +149,6 @@ router.get('/workspaces/:workspaceId/tasks', protect, getTasks);
  *       401:
  *         description: Unauthorized
  */
-router.post('/tasks', protect, createTask);
 
 /**
  * @swagger
@@ -157,7 +172,6 @@ router.post('/tasks', protect, createTask);
  *       404:
  *         description: Task not found
  */
-router.get('/tasks/:id', protect, getTask);
 
 /**
  * @swagger
@@ -218,7 +232,6 @@ router.get('/tasks/:id', protect, getTask);
  *       404:
  *         description: Task not found
  */
-router.patch('/tasks/:id', protect, updateTask);
 
 /**
  * @swagger
@@ -242,7 +255,6 @@ router.patch('/tasks/:id', protect, updateTask);
  *       404:
  *         description: Task not found
  */
-router.delete('/tasks/:id', protect, deleteTask);
 
 /**
  * @swagger
@@ -266,11 +278,6 @@ router.delete('/tasks/:id', protect, deleteTask);
  *       404:
  *         description: Task not found
  */
-router.get('/tasks/:id/subtasks', protect, (req, res, next) => {
-  // Redirect to getTasks with parentId parameter
-  req.query.parentId = req.params.id;
-  return getTasks(req, res, next);
-});
 
 /**
  * @swagger
@@ -310,7 +317,6 @@ router.get('/tasks/:id/subtasks', protect, (req, res, next) => {
  *       404:
  *         description: Task not found
  */
-router.post('/tasks/:id/move', protect, moveTask);
 
 /**
  * @swagger
@@ -334,7 +340,6 @@ router.post('/tasks/:id/move', protect, moveTask);
  *       404:
  *         description: Task not found
  */
-router.get('/tasks/:id/path', protect, getTaskPath);
 
 /**
  * @swagger
@@ -371,6 +376,5 @@ router.get('/tasks/:id/path', protect, getTaskPath);
  *       404:
  *         description: Task not found
  */
-router.post('/tasks/:id/complete', protect, toggleTaskCompletion);
 
 export default router;

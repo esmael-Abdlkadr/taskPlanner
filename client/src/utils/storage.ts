@@ -1,5 +1,5 @@
-const TOKEN_KEY = 'tasknest_token';
-const USER_KEY = 'tasknest_user';
+const TOKEN_KEY = "tasknest_token";
+const USER_KEY = "tasknest_user";
 
 export const storeAuthData = (token: string, user: any): void => {
   localStorage.setItem(TOKEN_KEY, token);

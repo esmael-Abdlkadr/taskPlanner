@@ -1,18 +1,18 @@
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
-import { getStoredToken, clearStoredAuth } from '../utils/storage';
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
+import { clearStoredAuth } from "../utils/storage";
 
 // Create axios instance with base configuration
 const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   timeout: 30000, // 30 seconds
 });
 
 // Request interceptor for adding auth token
 api.interceptors.request.use((config) => {
-  const token = getStoredToken();
+  const token = localStorage.getItem("token");
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -26,22 +26,20 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token expired or invalid
       clearStoredAuth();
-      window.location.href = '/login';
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   }
 );
 
 // Generic typed API request function
-export const apiRequest = async <T>(
-  config: AxiosRequestConfig
-): Promise<T> => {
+export const apiRequest = async <T>(config: AxiosRequestConfig): Promise<T> => {
   try {
     const response = await api(config);
     return response.data as T;
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      const errorMessage = error.response?.data?.message || 'An error occurred';
+      const errorMessage = error.response?.data?.message || "An error occurred";
       throw new Error(errorMessage);
     }
     throw error;

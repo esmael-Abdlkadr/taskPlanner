@@ -1,8 +1,7 @@
-
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'react-hot-toast';
-import { ThemeProvider } from './hooks/useTheme';
-import AppRouter from './routes';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "react-hot-toast";
+import { ThemeProvider } from "./hooks/useTheme";
+import AppRouter from "./routes";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -10,12 +9,12 @@ const queryClient = new QueryClient({
       staleTime: 60 * 1000, // 1 minute
       refetchOnWindowFocus: false,
       retry: 1,
-      refetchOnMount: true
+      refetchOnMount: true,
     },
     mutations: {
-      retry: 0
-    }
-  }
+      retry: 0,
+    },
+  },
 });
 
 function App() {
@@ -23,37 +22,37 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AppRouter />
-        
+
         <Toaster
-          position="top-right"
+          position="top-center"
           toastOptions={{
             // Default styles for toast
             duration: 4000,
             success: {
               style: {
-                border: '1px solid #10B981',
-                padding: '16px',
+                border: "1px solid #10B981",
+                padding: "16px",
               },
               iconTheme: {
-                primary: '#10B981',
-                secondary: '#FFFFFF',
+                primary: "#10B981",
+                secondary: "#FFFFFF",
               },
             },
             error: {
               style: {
-                border: '1px solid #EF4444',
-                padding: '16px',
+                border: "1px solid #EF4444",
+                padding: "16px",
               },
               iconTheme: {
-                primary: '#EF4444',
-                secondary: '#FFFFFF',
+                primary: "#EF4444",
+                secondary: "#FFFFFF",
               },
             },
             // Style based on theme
             style: {
-              borderRadius: '8px',
-              background: 'var(--background)',
-              color: 'var(--foreground)',
+              borderRadius: "8px",
+              background: "var(--background)",
+              color: "var(--foreground)",
             },
           }}
         />

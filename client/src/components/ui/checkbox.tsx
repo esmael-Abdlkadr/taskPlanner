@@ -1,30 +1,66 @@
-import * as React from "react"
-import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
-import { CheckIcon } from "lucide-react"
+import React from "react";
 
-import { cn } from "@/lib/utils"
-
-function Checkbox({
-  className,
-  ...props
-}: React.ComponentProps<typeof CheckboxPrimitive.Root>) {
-  return (
-    <CheckboxPrimitive.Root
-      data-slot="checkbox"
-      className={cn(
-        "peer border-input dark:bg-input/30 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground dark:data-[state=checked]:bg-primary data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive size-4 shrink-0 rounded-[4px] border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
-        className
-      )}
-      {...props}
-    >
-      <CheckboxPrimitive.Indicator
-        data-slot="checkbox-indicator"
-        className="flex items-center justify-center text-current transition-none"
-      >
-        <CheckIcon className="size-3.5" />
-      </CheckboxPrimitive.Indicator>
-    </CheckboxPrimitive.Root>
-  )
+interface CheckboxProps {
+  label?: React.ReactNode;
+  checked?: boolean;
+  onChange?: (checked: boolean) => void;
+  disabled?: boolean;
+  className?: string;
+  id?: string;
 }
 
-export { Checkbox }
+const Checkbox: React.FC<CheckboxProps> = ({
+  label,
+  checked = false,
+  onChange,
+  disabled = false,
+  className = "",
+  id,
+}) => {
+  const checkboxId =
+    id || `checkbox-${Math.random().toString(36).substr(2, 9)}`;
+
+  return (
+    <div className={`flex items-center ${className}`}>
+      <div className="relative flex items-center">
+        <input
+          type="checkbox"
+          id={checkboxId}
+          checked={checked}
+          onChange={(e) => onChange && onChange(e.target.checked)}
+          disabled={disabled}
+          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 
+                    dark:border-gray-600 dark:bg-gray-800 dark:checked:bg-indigo-600 dark:focus:ring-offset-gray-900
+                    disabled:opacity-50"
+        />
+        {checked && (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="pointer-events-none absolute h-4 w-4 text-white dark:text-gray-900"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={3}
+              d="M5 13l4 4L19 7"
+              className="text-white dark:text-gray-900"
+            />
+          </svg>
+        )}
+      </div>
+      {label && (
+        <label
+          htmlFor={checkboxId}
+          className="ml-2 block text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+        >
+          {label}
+        </label>
+      )}
+    </div>
+  );
+};
+
+export default Checkbox;

@@ -9,96 +9,96 @@ import { loginSchema, signupSchema } from "../validators/validatorSchema";
 import sendEmail from "../utils/sendEmail";
 import { generateCode } from "../utils/generator";
 
-
 export const signup = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
-      const parsedResult = signupSchema.safeParse(req.body);
-      if (!parsedResult.success) {
-        const errorMessages = parsedResult.error.errors
-          .map((err) => err.message)
-          .join(", ");
-        return next(new HttpError(errorMessages, 400));
-      }
-  
-      const {
+  async (req: Request, res: Response, next: NextFunction) => {
+    const parsedResult = signupSchema.safeParse(req.body);
+    if (!parsedResult.success) {
+      const errorMessages = parsedResult.error.errors
+        .map((err) => err.message)
+        .join(", ");
+      return next(new HttpError(errorMessages, 400));
+    }
+
+    const {
+      firstName,
+      lastName,
+      email: rawEmail,
+      password,
+    } = parsedResult.data;
+
+    const email = rawEmail.toLowerCase().trim();
+    const isUserExist = await User?.findOne({ email });
+    if (isUserExist) {
+      return next(new HttpError("User already exists", 400));
+    }
+
+    try {
+      const otp = generateCode(4);
+      const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+      // Create user regardless of email success
+      const user = await User.create({
         firstName,
         lastName,
-        email: rawEmail,
+        email,
         password,
-      } = parsedResult.data;
-      
-      const email = rawEmail.toLowerCase().trim();
-      const isUserExist = await User?.findOne({ email });
-      if (isUserExist) {
-        return next(new HttpError("User already exists", 400));
-      }
-      
+        otp,
+        otpExpires,
+      });
+
+      // Create personal workspace for the user
+      const personalWorkspace = await Workspace.create({
+        name: `${firstName}'s Workspace`,
+        description: "Your personal workspace",
+        ownerId: user._id,
+        isPersonal: true,
+        color: "#6366F1", // Default indigo color
+        icon: "home",
+      });
+
+      const data = {
+        user: { name: user.firstName, email: user.email },
+        otp: otp,
+      };
+
       try {
-        const otp = generateCode(4);
-        const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-        
-        // Create user regardless of email success
-        const user = await User.create({
-          firstName,
-          lastName,
-          email,
-          password,
-          otp,
-          otpExpires,
+        await sendEmail({
+          email: user.email,
+          subject: "Welcome to NestedTask - Verify Your Email",
+          template: "activation",
+          date: data,
         });
-  
-        // Create personal workspace for the user
-        const personalWorkspace = await Workspace.create({
-          name: `${firstName}'s Workspace`,
-          description: "Your personal workspace",
-          ownerId: user._id,
-          isPersonal: true,
-          color: "#6366F1", // Default indigo color
-          icon: "home"
+
+        res.status(201).json({
+          status: "success",
+          message: "Account created! Please verify your email to continue.",
+          email: user.email,
+          workspace: {
+            id: personalWorkspace._id,
+            name: personalWorkspace.name,
+          },
         });
-        
-        const data = {
-          user: { name: user.firstName, email: user.email },
-          otp: otp,
-        };
-        
-        try {
-          await sendEmail({
-            email: user.email,
-            subject: "Welcome to NestedTask - Verify Your Email",
-            template: "activation",
-            date: data,
-          });
-          
-          res.status(201).json({
-            status: "success",
-            message: "Account created! Please verify your email to continue.",
-            email: user.email,
-            workspace: {
-              id: personalWorkspace._id,
-              name: personalWorkspace.name
-            }
-          });
-        } catch (emailError) {
-          console.error("Error sending email:", emailError);
-          
-          // Still return success but note email failed
-          res.status(201).json({
-            status: "success",
-            message: "Account created but verification email failed. Please contact support.",
-            email: user.email,
-            workspace: {
-              id: personalWorkspace._id,
-              name: personalWorkspace.name
-            }
-          });
-        }
-      } catch (error) {
-        console.error("Error in signup process:", error);
-        return next(new HttpError("Failed to create your account", 500));
+      } catch (emailError) {
+        console.error("Error sending email:", emailError);
+
+        // Still return success but note email failed
+        res.status(201).json({
+          status: "success",
+          message:
+            "Account created but verification email failed. Please contact support.",
+          email: user.email,
+          workspace: {
+            id: personalWorkspace._id,
+            name: personalWorkspace.name,
+          },
+        });
       }
+    } catch (error) {
+      console.error("Error in signup process:", error);
+      return next(new HttpError("Failed to create your account", 500));
     }
-  );
+  }
+);
 /**
  * Verify email with OTP
  */
@@ -106,7 +106,9 @@ export const verifyOtp = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { email: rawEmail, otp } = req.body;
     if (!rawEmail || !otp) {
-      return next(new HttpError("Email and verification code are required", 400));
+      return next(
+        new HttpError("Email and verification code are required", 400)
+      );
     }
     const email = rawEmail.toLowerCase().trim();
     try {
@@ -117,7 +119,9 @@ export const verifyOtp = asyncHandler(
       }
       // Check if OTP exists and is not expired
       if (!user.otp || !user.otpExpires) {
-        return next(new HttpError("Verification code not found or already used", 400));
+        return next(
+          new HttpError("Verification code not found or already used", 400)
+        );
       }
       // Check if OTP is expired
       if (user.otpExpires < new Date()) {
@@ -152,9 +156,9 @@ export const verifyOtp = asyncHandler(
       res.status(200).json({
         status: "success",
         message: "Email verified successfully",
-        data: { 
+        data: {
           user: userData,
-          accessToken
+          accessToken,
         },
       });
     } catch (err) {
@@ -239,33 +243,37 @@ export const login = asyncHandler(
       return next(new HttpError("Invalid email or password", 401));
     }
     if (!user.emailVerified) {
-      return next(new HttpError("Please verify your email before logging in", 401));
+      return next(
+        new HttpError("Please verify your email before logging in", 401)
+      );
     }
     if (!user.isActive) {
       return next(new HttpError("Your account has been deactivated", 401));
     }
-    
+
     const accessToken = generateAccessToken({
       id: user._id as unknown as string | number,
     });
-    
+
     // Get user's workspaces
-    const workspaces = await Workspace.find({ 
+    const workspaces = await Workspace.find({
       $or: [
         { ownerId: user._id },
         // Would include workspaces where user is a member via WorkspaceMember model
-      ]
-    }).sort({ isPersonal: -1, updatedAt: -1 }).limit(10);
-    
+      ],
+    })
+      .sort({ isPersonal: -1, updatedAt: -1 })
+      .limit(10);
+
     const { password: _, __v, ...rest } = user.toObject();
 
     res.status(200).json({
       status: "success",
       message: "Logged in successfully",
-      data: { 
-        user: rest, 
+      data: {
+        user: rest,
         accessToken,
-        workspaces
+        workspaces,
       },
     });
   }
@@ -278,11 +286,11 @@ export const resetPassword = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { token } = req.params;
     const { password } = req.body;
-    
+
     if (!password) {
       return next(new HttpError("Password is required", 400));
     }
-    
+
     const resetToken = Crypto.createHash("sha256").update(token).digest("hex");
     // find user with reset token and check if token is valid.
     const user = await User.findOne({
@@ -295,13 +303,13 @@ export const resetPassword = asyncHandler(
     user.password = password;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
-    
+
     await user.save();
-    
+
     const accessToken = generateAccessToken({
       id: user._id as unknown as string | number,
     });
-    
+
     res.status(200).json({
       status: "success",
       message: "Your password has been reset successfully",
@@ -319,27 +327,30 @@ export const forgotPassword = asyncHandler(
     if (!email) {
       return next(new HttpError("Email is required", 400));
     }
-    
+
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       // For security reasons, still return success even if user doesn't exist
       return res.status(200).json({
         status: "success",
-        message: "If an account with that email exists, we've sent password reset instructions",
+        message:
+          "If an account with that email exists, we've sent password reset instructions",
       });
     }
-    
+
     // Generate reset token
     const resetToken = user.createPasswordResetToken();
     await user.save({ validateBeforeSave: false });
-    
+
     // Create password reset URL - should be configurable in production
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+    const resetUrl = `${
+      process.env.FRONTEND_URL || "http://localhost:5173"
+    }/reset-password/${resetToken}`;
     const data = {
       user: { name: user.firstName, email: user.email },
       resetUrl,
     };
-    
+
     try {
       await sendEmail({
         email: user.email,
@@ -347,17 +358,18 @@ export const forgotPassword = asyncHandler(
         template: "passwordreset",
         date: data,
       });
-      
+
       res.status(200).json({
         status: "success",
-        message: "If an account with that email exists, we've sent password reset instructions",
+        message:
+          "If an account with that email exists, we've sent password reset instructions",
       });
     } catch (error) {
       // Reset the token fields if email fails
       user.passwordResetToken = undefined;
       user.passwordResetExpires = undefined;
       await user.save({ validateBeforeSave: false });
-      
+
       console.error("Error sending password reset email:", error);
       return next(new HttpError("Failed to send password reset email", 500));
     }
@@ -371,22 +383,22 @@ export const updateProfile = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { firstName, lastName } = req.body;
     const userId = req.user?._id;
-    
+
     if (!userId) {
       return next(new HttpError("Authentication required", 401));
     }
-    
+
     // Only allow specific fields to be updated
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { firstName, lastName },
       { new: true, runValidators: true }
     );
-    
+
     if (!updatedUser) {
       return next(new HttpError("User not found", 404));
     }
-    
+
     res.status(200).json({
       status: "success",
       message: "Profile updated successfully",
@@ -402,24 +414,24 @@ export const updatePreferences = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { theme, notifications } = req.body;
     const userId = req.user?._id;
-    
+
     if (!userId) {
       return next(new HttpError("Authentication required", 401));
     }
-    
+
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { 
-        'preferences.theme': theme,
-        'preferences.notifications': notifications 
+      {
+        "preferences.theme": theme,
+        "preferences.notifications": notifications,
       },
       { new: true, runValidators: true }
     );
-    
+
     if (!updatedUser) {
       return next(new HttpError("User not found", 404));
     }
-    
+
     res.status(200).json({
       status: "success",
       message: "Preferences updated successfully",
@@ -427,4 +439,3 @@ export const updatePreferences = asyncHandler(
     });
   }
 );
-

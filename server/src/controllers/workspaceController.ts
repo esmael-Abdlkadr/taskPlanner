@@ -1,4 +1,4 @@
-import { WorkspaceMember } from '../models/workSpaceMember';
+import { WorkspaceMember } from "../models/workSpaceMember";
 import { Response, Request, NextFunction } from "express";
 import asyncHandler from "../utils/asyncHandler";
 import HttpError from "../utils/httpError";
@@ -6,11 +6,11 @@ import { Workspace } from "../models/Workspace";
 import { User } from "../models/User";
 import { Task } from "../models/Task";
 import { ActivityLog } from "../models/ActivityLog";
-import { 
-  createWorkspaceSchema, 
-  updateWorkspaceSchema, 
+import {
+  createWorkspaceSchema,
+  updateWorkspaceSchema,
   addWorkspaceMemberSchema,
-  updateWorkspaceMemberSchema
+  updateWorkspaceMemberSchema,
 } from "../validators/validatorSchema";
 
 /**
@@ -28,51 +28,55 @@ export const getWorkspaces = asyncHandler(
       // Find workspaces owned by user
       const ownedWorkspaces = await Workspace.find({
         ownerId: userId,
-        isArchived: { $ne: true }
+        isArchived: { $ne: true },
       }).sort({ updatedAt: -1 });
 
       // Find workspaces where user is a member
       const memberships = await WorkspaceMember.find({
-        userId
-      }).select('workspaceId role');
+        userId,
+      }).select("workspaceId role");
 
-      const memberWorkspaceIds = memberships.map(m => m.workspaceId);
+      const memberWorkspaceIds = memberships.map((m) => m.workspaceId);
 
       const memberWorkspaces = await Workspace.find({
         _id: { $in: memberWorkspaceIds },
-        isArchived: { $ne: true }
+        isArchived: { $ne: true },
       });
 
       // Combine and format results
       const workspaces = [
-        ...ownedWorkspaces.map(ws => ({
+        ...ownedWorkspaces.map((ws) => ({
           ...ws.toObject(),
-          role: 'owner'
+          role: "owner",
         })),
-        ...memberWorkspaces.map(ws => {
+        ...memberWorkspaces.map((ws) => {
           const membership = memberships.find(
-            m => (m.workspaceId as any).toString() === (ws as any)._id.toString()
+            (m) =>
+              (m.workspaceId as any).toString() === (ws as any)._id.toString()
           );
           return {
             ...ws.toObject(),
-            role: membership?.role || 'member'
+            role: membership?.role || "member",
           };
-        })
+        }),
       ];
 
       // Sort - personal first, then by most recent update
       workspaces.sort((a, b) => {
         if (a.isPersonal && !b.isPersonal) return -1;
         if (!a.isPersonal && b.isPersonal) return 1;
-        return new Date((b as any).updatedAt).getTime() - new Date((a as any).updatedAt).getTime();
+        return (
+          new Date((b as any).updatedAt).getTime() -
+          new Date((a as any).updatedAt).getTime()
+        );
       });
 
       res.status(200).json({
-        status: 'success',
-        data: { workspaces }
+        status: "success",
+        data: { workspaces },
       });
     } catch (error) {
-      console.error('Error fetching workspaces:', error);
+      console.error("Error fetching workspaces:", error);
       return next(new HttpError("Failed to fetch workspaces", 500));
     }
   }
@@ -97,7 +101,7 @@ export const getWorkspace = asyncHandler(
         $or: [
           { ownerId: userId },
           // Would need to implement workspace membership check here
-        ]
+        ],
       });
 
       if (!workspace) {
@@ -105,13 +109,13 @@ export const getWorkspace = asyncHandler(
       }
 
       // Determine user's role in this workspace
-      let role = 'member';
+      let role = "member";
       if (String(workspace.ownerId) === String(userId)) {
-        role = 'owner';
+        role = "owner";
       } else {
         const membership = await WorkspaceMember.findOne({
           workspaceId: workspace._id,
-          userId
+          userId,
         });
         if (membership) {
           role = membership.role;
@@ -119,34 +123,37 @@ export const getWorkspace = asyncHandler(
       }
 
       // Get workspace statistics
-      const totalTasks = await Task.countDocuments({ workspaceId: workspace._id });
-      const completedTasks = await Task.countDocuments({ 
+      const totalTasks = await Task.countDocuments({
         workspaceId: workspace._id,
-        status: 'completed'
+      });
+      const completedTasks = await Task.countDocuments({
+        workspaceId: workspace._id,
+        status: "completed",
       });
       const overdueTasks = await Task.countDocuments({
         workspaceId: workspace._id,
         dueDate: { $lt: new Date() },
-        status: { $ne: 'completed' }
+        status: { $ne: "completed" },
       });
 
       // Get top-level tasks summary (limited to 5)
-      const recentTasks = await Task.find({ 
+      const recentTasks = await Task.find({
         workspaceId: workspace._id,
-        parentId: null
+        parentId: null,
       })
-      .sort({ updatedAt: -1 })
-      .limit(5)
-      .select('title status priority dueDate')
-      .lean();
+        .sort({ updatedAt: -1 })
+        .limit(5)
+        .select("title status priority dueDate")
+        .lean();
 
       // Get member count
-      const memberCount = await WorkspaceMember.countDocuments({
-        workspaceId: workspace._id
-      }) + 1; // +1 for owner
+      const memberCount =
+        (await WorkspaceMember.countDocuments({
+          workspaceId: workspace._id,
+        })) + 1; // +1 for owner
 
       res.status(200).json({
-        status: 'success',
+        status: "success",
         data: {
           workspace: workspace.toObject(),
           role,
@@ -154,16 +161,17 @@ export const getWorkspace = asyncHandler(
             totalTasks,
             completedTasks,
             overdueTasks,
-            completionRate: totalTasks > 0 
-              ? Math.round((completedTasks / totalTasks) * 100) 
-              : 0,
-            memberCount
+            completionRate:
+              totalTasks > 0
+                ? Math.round((completedTasks / totalTasks) * 100)
+                : 0,
+            memberCount,
           },
-          recentTasks
-        }
+          recentTasks,
+        },
       });
     } catch (error) {
-      console.error('Error fetching workspace:', error);
+      console.error("Error fetching workspace:", error);
       return next(new HttpError("Failed to fetch workspace details", 500));
     }
   }
@@ -187,23 +195,25 @@ export const createWorkspace = asyncHandler(
       return next(new HttpError("Authentication required", 401));
     }
 
-    const { 
-      name, 
+    const {
+      name,
       description = "",
       isPersonal = false,
       color = "#6366F1", // Default indigo
-      icon = "folder"
+      icon = "folder",
     } = parsedResult.data;
 
     try {
       // Check for duplicate name
       const existingWorkspace = await Workspace.findOne({
         name,
-        ownerId: userId
+        ownerId: userId,
       });
 
       if (existingWorkspace) {
-        return next(new HttpError("You already have a workspace with this name", 400));
+        return next(
+          new HttpError("You already have a workspace with this name", 400)
+        );
       }
 
       // Create the workspace
@@ -213,25 +223,25 @@ export const createWorkspace = asyncHandler(
         ownerId: userId,
         isPersonal,
         color,
-        icon
+        icon,
       });
 
       // Log activity
       await ActivityLog.create({
         entityId: workspace._id,
-        entityType: 'workspace',
+        entityType: "workspace",
         userId,
-        action: 'create',
-        details: { name: workspace.name }
+        action: "create",
+        details: { name: workspace.name },
       });
 
       res.status(201).json({
-        status: 'success',
-        message: 'Workspace created successfully',
-        data: { workspace }
+        status: "success",
+        message: "Workspace created successfully",
+        data: { workspace },
       });
     } catch (error) {
-      console.error('Error creating workspace:', error);
+      console.error("Error creating workspace:", error);
       return next(new HttpError("Failed to create workspace", 500));
     }
   }
@@ -260,15 +270,24 @@ export const updateWorkspace = asyncHandler(
       // Check if workspace exists and user is owner
       const workspace = await Workspace.findOne({
         _id: id,
-        ownerId: userId
+        ownerId: userId,
       });
 
       if (!workspace) {
-        return next(new HttpError("Workspace not found or you don't have permission to update it", 404));
+        return next(
+          new HttpError(
+            "Workspace not found or you don't have permission to update it",
+            404
+          )
+        );
       }
 
       // Prevent renaming personal workspace
-      if (workspace.isPersonal && parsedResult.data.name && parsedResult.data.name !== workspace.name) {
+      if (
+        workspace.isPersonal &&
+        parsedResult.data.name &&
+        parsedResult.data.name !== workspace.name
+      ) {
         return next(new HttpError("Personal workspace cannot be renamed", 400));
       }
 
@@ -277,11 +296,13 @@ export const updateWorkspace = asyncHandler(
         const existingWorkspace = await Workspace.findOne({
           name: parsedResult.data.name,
           ownerId: userId,
-          _id: { $ne: id } // Exclude current workspace
+          _id: { $ne: id }, // Exclude current workspace
         });
 
         if (existingWorkspace) {
-          return next(new HttpError("You already have a workspace with this name", 400));
+          return next(
+            new HttpError("You already have a workspace with this name", 400)
+          );
         }
       }
 
@@ -295,19 +316,19 @@ export const updateWorkspace = asyncHandler(
       // Log activity
       await ActivityLog.create({
         entityId: workspace._id,
-        entityType: 'workspace',
+        entityType: "workspace",
         userId,
-        action: 'update',
-        details: { name: workspace.name, changes: parsedResult.data }
+        action: "update",
+        details: { name: workspace.name, changes: parsedResult.data },
       });
 
       res.status(200).json({
-        status: 'success',
-        message: 'Workspace updated successfully',
-        data: { workspace: updatedWorkspace }
+        status: "success",
+        message: "Workspace updated successfully",
+        data: { workspace: updatedWorkspace },
       });
     } catch (error) {
-      console.error('Error updating workspace:', error);
+      console.error("Error updating workspace:", error);
       return next(new HttpError("Failed to update workspace", 500));
     }
   }
@@ -329,16 +350,23 @@ export const archiveWorkspace = asyncHandler(
       // Check if workspace exists and user is owner
       const workspace = await Workspace.findOne({
         _id: id,
-        ownerId: userId
+        ownerId: userId,
       });
 
       if (!workspace) {
-        return next(new HttpError("Workspace not found or you don't have permission to archive it", 404));
+        return next(
+          new HttpError(
+            "Workspace not found or you don't have permission to archive it",
+            404
+          )
+        );
       }
 
       // Prevent archiving personal workspace
       if (workspace.isPersonal) {
-        return next(new HttpError("Personal workspace cannot be archived", 400));
+        return next(
+          new HttpError("Personal workspace cannot be archived", 400)
+        );
       }
 
       // Archive the workspace
@@ -348,18 +376,18 @@ export const archiveWorkspace = asyncHandler(
       // Log activity
       await ActivityLog.create({
         entityId: workspace._id,
-        entityType: 'workspace',
+        entityType: "workspace",
         userId,
-        action: 'update',
-        details: { name: workspace.name, archived: true }
+        action: "update",
+        details: { name: workspace.name, archived: true },
       });
 
       res.status(200).json({
-        status: 'success',
-        message: 'Workspace archived successfully'
+        status: "success",
+        message: "Workspace archived successfully",
       });
     } catch (error) {
-      console.error('Error archiving workspace:', error);
+      console.error("Error archiving workspace:", error);
       return next(new HttpError("Failed to archive workspace", 500));
     }
   }
@@ -384,7 +412,7 @@ export const getWorkspaceMembers = asyncHandler(
         $or: [
           { ownerId: userId },
           // Would need to implement workspace membership check here
-        ]
+        ],
       });
 
       if (!workspace) {
@@ -392,28 +420,29 @@ export const getWorkspaceMembers = asyncHandler(
       }
 
       // Get owner info
-      const owner = await User.findById(workspace.ownerId)
-        .select('firstName lastName email avatar');
+      const owner = await User.findById(workspace.ownerId).select(
+        "firstName lastName email avatar"
+      );
 
       // Get members
       const members = await WorkspaceMember.find({ workspaceId: id })
-        .populate('userId', 'firstName lastName email avatar')
-        .sort('role');
+        .populate("userId", "firstName lastName email avatar")
+        .sort("role");
 
       res.status(200).json({
-        status: 'success',
+        status: "success",
         data: {
           owner,
-          members: members.map(member => ({
+          members: members.map((member) => ({
             id: member._id,
             user: member.userId,
             role: member.role,
-            joinedAt: member.joinedAt
-          }))
-        }
+            joinedAt: member.joinedAt,
+          })),
+        },
       });
     } catch (error) {
-      console.error('Error fetching workspace members:', error);
+      console.error("Error fetching workspace members:", error);
       return next(new HttpError("Failed to fetch workspace members", 500));
     }
   }
@@ -438,7 +467,7 @@ export const addWorkspaceMember = asyncHandler(
       return next(new HttpError("Authentication required", 401));
     }
 
-    const { email, role = 'member' } = parsedResult.data;
+    const { email, role = "member" } = parsedResult.data;
 
     try {
       // Check if workspace exists and user is owner or admin
@@ -447,32 +476,44 @@ export const addWorkspaceMember = asyncHandler(
         $or: [
           { ownerId: userId },
           // Would need to check if user is admin
-        ]
+        ],
       });
 
       if (!workspace) {
-        return next(new HttpError("Workspace not found or you don't have permission to add members", 404));
+        return next(
+          new HttpError(
+            "Workspace not found or you don't have permission to add members",
+            404
+          )
+        );
       }
 
       // Find user by email
       const userToAdd = await User.findOne({ email });
       if (!userToAdd) {
-        return next(new HttpError("User not found with this email address", 404));
+        return next(
+          new HttpError("User not found with this email address", 404)
+        );
       }
 
       // Check if user is already the owner
-      if ((workspace.ownerId as any).toString() === (userToAdd._id as any).toString()) {
+      if (
+        (workspace.ownerId as any).toString() ===
+        (userToAdd._id as any).toString()
+      ) {
         return next(new HttpError("User is already the workspace owner", 400));
       }
 
       // Check if user is already a member
       const existingMember = await WorkspaceMember.findOne({
         workspaceId: id,
-        userId: userToAdd._id
+        userId: userToAdd._id,
       });
 
       if (existingMember) {
-        return next(new HttpError("User is already a member of this workspace", 400));
+        return next(
+          new HttpError("User is already a member of this workspace", 400)
+        );
       }
 
       // Add user as member
@@ -480,12 +521,13 @@ export const addWorkspaceMember = asyncHandler(
         workspaceId: id,
         userId: userToAdd._id,
         role,
-        invitedBy: userId
+        invitedBy: userId,
       });
 
       // Get member with user details
-      const populatedMember = await WorkspaceMember.findById(member._id)
-        .populate('userId', 'firstName lastName email avatar');
+      const populatedMember = await WorkspaceMember.findById(
+        member._id
+      ).populate("userId", "firstName lastName email avatar");
 
       if (!populatedMember) {
         return next(new HttpError("Failed to retrieve the added member", 500));
@@ -494,32 +536,32 @@ export const addWorkspaceMember = asyncHandler(
       // Log activity
       await ActivityLog.create({
         entityId: workspace._id,
-        entityType: 'workspace',
+        entityType: "workspace",
         userId,
-        action: 'add_member',
-        details: { 
-          workspaceName: workspace.name, 
+        action: "add_member",
+        details: {
+          workspaceName: workspace.name,
           newMember: userToAdd.email,
-          role
-        }
+          role,
+        },
       });
 
       // TODO: Send email notification to the user
 
       res.status(201).json({
-        status: 'success',
-        message: 'Member added successfully',
+        status: "success",
+        message: "Member added successfully",
         data: {
           member: {
             id: populatedMember._id,
             user: populatedMember.userId,
             role: populatedMember.role,
-            joinedAt: populatedMember.joinedAt
-          }
-        }
+            joinedAt: populatedMember.joinedAt,
+          },
+        },
       });
     } catch (error) {
-      console.error('Error adding workspace member:', error);
+      console.error("Error adding workspace member:", error);
       return next(new HttpError("Failed to add member", 500));
     }
   }
@@ -550,16 +592,23 @@ export const updateWorkspaceMemberRole = asyncHandler(
       // Check if workspace exists and user is owner
       const workspace = await Workspace.findOne({
         _id: workspaceId,
-        ownerId: userId
+        ownerId: userId,
       });
 
       if (!workspace) {
-        return next(new HttpError("Workspace not found or you don't have permission to update members", 404));
+        return next(
+          new HttpError(
+            "Workspace not found or you don't have permission to update members",
+            404
+          )
+        );
       }
 
       // Find the membership
-      const member = await WorkspaceMember.findById(memberId)
-        .populate('userId', 'firstName lastName email');
+      const member = await WorkspaceMember.findById(memberId).populate(
+        "userId",
+        "firstName lastName email"
+      );
 
       if (!member || String(member.workspaceId) !== workspaceId) {
         return next(new HttpError("Member not found in this workspace", 404));
@@ -572,28 +621,28 @@ export const updateWorkspaceMemberRole = asyncHandler(
       // Log activity
       await ActivityLog.create({
         entityId: workspace._id,
-        entityType: 'workspace',
+        entityType: "workspace",
         userId,
-        action: 'update_member',
-        details: { 
-          workspaceName: workspace.name, 
+        action: "update_member",
+        details: {
+          workspaceName: workspace.name,
           memberEmail: (member.userId as any).email,
-          newRole: role
-        }
+          newRole: role,
+        },
       });
 
       res.status(200).json({
-        status: 'success',
-        message: 'Member role updated successfully',
+        status: "success",
+        message: "Member role updated successfully",
         data: {
           member: {
             id: member._id,
-            role: member.role
-          }
-        }
+            role: member.role,
+          },
+        },
       });
     } catch (error) {
-      console.error('Error updating workspace member:', error);
+      console.error("Error updating workspace member:", error);
       return next(new HttpError("Failed to update member", 500));
     }
   }
@@ -618,16 +667,23 @@ export const removeWorkspaceMember = asyncHandler(
         $or: [
           { ownerId: userId },
           // Would need to check if user is admin
-        ]
+        ],
       });
 
       if (!workspace) {
-        return next(new HttpError("Workspace not found or you don't have permission to remove members", 404));
+        return next(
+          new HttpError(
+            "Workspace not found or you don't have permission to remove members",
+            404
+          )
+        );
       }
 
       // Find the membership
-      const member = await WorkspaceMember.findById(memberId)
-        .populate('userId', 'email');
+      const member = await WorkspaceMember.findById(memberId).populate(
+        "userId",
+        "email"
+      );
 
       if (!member || String(member.workspaceId) !== workspaceId) {
         return next(new HttpError("Member not found in this workspace", 404));
@@ -642,21 +698,21 @@ export const removeWorkspaceMember = asyncHandler(
       // Log activity
       await ActivityLog.create({
         entityId: workspace._id,
-        entityType: 'workspace',
+        entityType: "workspace",
         userId,
-        action: 'remove_member',
-        details: { 
-          workspaceName: workspace.name, 
-          memberEmail
-        }
+        action: "remove_member",
+        details: {
+          workspaceName: workspace.name,
+          memberEmail,
+        },
       });
 
       res.status(200).json({
-        status: 'success',
-        message: 'Member removed successfully'
+        status: "success",
+        message: "Member removed successfully",
       });
     } catch (error) {
-      console.error('Error removing workspace member:', error);
+      console.error("Error removing workspace member:", error);
       return next(new HttpError("Failed to remove member", 500));
     }
   }

@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { useAuthStore } from "../../store/authStore"; 
+import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import { cn } from "../../lib/utils"; 
+import { cn } from "../../lib/utils";
 import { Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -11,35 +10,33 @@ const AppLayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
   const location = useLocation();
-  const user = useAuthStore((state) => state.user);
-  
+
   // Toggle sidebar collapse state
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
-  
+
   // Toggle mobile menu
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
-  
+
   // Close mobile menu on location change
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location]);
-  
+
   // Simulate loading user data if needed
   useEffect(() => {
     // Here you could load initial data needed for the app
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 500);
-    
+
     return () => clearTimeout(timer);
   }, []);
-  
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -48,7 +45,7 @@ const AppLayout = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar - desktop */}
@@ -60,7 +57,7 @@ const AppLayout = () => {
       >
         <Sidebar collapsed={sidebarCollapsed} toggleCollapse={toggleSidebar} />
       </div>
-      
+
       {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {isMobileMenuOpen && (
@@ -73,7 +70,7 @@ const AppLayout = () => {
           />
         )}
       </AnimatePresence>
-      
+
       {/* Mobile sidebar */}
       <AnimatePresence>
         {isMobileMenuOpen && (
@@ -88,7 +85,7 @@ const AppLayout = () => {
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       {/* Main content */}
       <div
         className={cn(
@@ -97,12 +94,12 @@ const AppLayout = () => {
         )}
       >
         {/* Header */}
-        <Header 
-          toggleMobileMenu={toggleMobileMenu} 
-          toggleSidebar={toggleSidebar} 
+        <Header
+          toggleMobileMenu={toggleMobileMenu}
+          toggleSidebar={toggleSidebar}
           sidebarCollapsed={sidebarCollapsed}
         />
-        
+
         {/* Main content area */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-24">
           <Outlet />

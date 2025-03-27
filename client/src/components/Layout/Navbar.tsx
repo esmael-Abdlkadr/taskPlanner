@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Button } from "../ui/button"; 
-import { useAuthStore } from "../../store/authStore"; 
+import Button from "../ui/button";
+import { useAuthStore } from "../../store/authStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 
@@ -10,22 +10,22 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  
+
   // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
-    
+
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-  
+
   // Close mobile menu on navigation
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
-  
+
   return (
     <header
       className={`sticky top-0 z-40 w-full transition-all duration-200 ${
@@ -59,37 +59,46 @@ const Navbar = () => {
             <span className="text-xl font-bold">TaskNest</span>
           </Link>
         </div>
-        
+
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-6">
-          <Link to="/features" className="text-sm font-medium transition-colors hover:text-indigo-600 dark:hover:text-indigo-400">
+          <Link
+            to="/features"
+            className="text-sm font-medium transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
+          >
             Features
           </Link>
-          <Link to="/pricing" className="text-sm font-medium transition-colors hover:text-indigo-600 dark:hover:text-indigo-400">
+          <Link
+            to="/pricing"
+            className="text-sm font-medium transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
+          >
             Pricing
           </Link>
-          <Link to="/about" className="text-sm font-medium transition-colors hover:text-indigo-600 dark:hover:text-indigo-400">
+          <Link
+            to="/about"
+            className="text-sm font-medium transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
+          >
             About
           </Link>
         </nav>
-        
+
         <div className="hidden md:flex items-center gap-4">
           {isAuthenticated ? (
-            <Button asChild>
+            <Button>
               <Link to="/dashboard">Dashboard</Link>
             </Button>
           ) : (
             <>
-              <Button variant="outline" asChild>
+              <Button variant="outline">
                 <Link to="/login">Sign In</Link>
               </Button>
-              <Button asChild>
+              <Button>
                 <Link to="/signup">Sign Up</Link>
               </Button>
             </>
           )}
         </div>
-        
+
         {/* Mobile Menu Button */}
         <button
           className="flex items-center justify-center rounded-md p-2.5 text-gray-700 md:hidden dark:text-gray-300"
@@ -102,7 +111,7 @@ const Navbar = () => {
           )}
         </button>
       </div>
-      
+
       {/* Mobile Navigation */}
       <AnimatePresence>
         {mobileMenuOpen && (
