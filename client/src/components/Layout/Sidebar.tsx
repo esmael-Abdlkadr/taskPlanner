@@ -9,10 +9,7 @@ import {
   SettingsIcon,
   HelpCircleIcon,
   FolderIcon,
-  FolderOpenIcon,
-  ChevronRightIcon,
   BriefcaseIcon,
-  UserPlusIcon,
   Users2Icon,
 } from "lucide-react";
 
@@ -25,13 +22,14 @@ import { useWorkspaceStore } from "../../store/workspaceStore";
 import { CreateWorkspaceDialog } from "../../features/workspace/component/CreateWorkspaceDialog";
 import { useWorkspaces } from "../../hooks/useWorkspace";
 import { Dropdown } from "../ui/dropdown";
+import { Workspace } from "../../services/workspaceService";
 
 interface SidebarProps {
   collapsed: boolean;
   toggleCollapse: () => void;
 }
 
-const Sidebar = ({ collapsed, toggleCollapse }: SidebarProps) => {
+const Sidebar = ({ collapsed }: SidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
@@ -67,7 +65,7 @@ const Sidebar = ({ collapsed, toggleCollapse }: SidebarProps) => {
   };
 
   // Open workspace when clicking on it
-  const handleWorkspaceClick = (workspace: any) => {
+  const handleWorkspaceClick = (workspace:Workspace) => {
     setActiveWorkspace(workspace);
     navigate(`/workspaces/${workspace._id}`);
   };

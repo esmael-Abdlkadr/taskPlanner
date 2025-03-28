@@ -38,7 +38,7 @@ const VerifyEmail = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otp.trim().length !== 6) return;
+    if (otp.trim().length !== 4) return;
 
     await verifyOtp.mutateAsync(
       { email, otp },
@@ -97,7 +97,7 @@ const VerifyEmail = () => {
             onChange={(e) => setOtp(e.target.value)}
             placeholder="Enter 6-digit code"
             className="text-center text-lg tracking-widest"
-            maxLength={6}
+            maxLength={4}
             required
           />
         </div>
@@ -105,7 +105,7 @@ const VerifyEmail = () => {
         <Button
           type="submit"
           className="w-full"
-          disabled={verifyOtp.isPending || otp.trim().length !== 6}
+          disabled={verifyOtp.isPending || otp.trim().length !== 4}
         >
           {verifyOtp.isPending ? (
             <Loader className="mr-2 h-4 w-4 animate-spin" />

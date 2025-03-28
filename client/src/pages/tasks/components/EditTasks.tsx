@@ -50,17 +50,17 @@ export const EditTaskModal = ({
   const [changingCategory, setChangingCategory] = useState(false);
   const { data: taskData, isLoading: taskLoading } = useTask(taskId);
   const updateTask = useUpdateTask(taskId);
-  const { data: workspacesData, isLoading: workspacesLoading } = useWorkspaces();
+  const { data: workspacesData } = useWorkspaces();
   const { data: categories } = useCategories();
 
-  // Extract task data
-  const task = taskData?.task || taskData;
+  // Extract task data using the correct structure
+  const task = taskData?.task;
 
   // Extract workspaces array safely
-  const workspaces = Array.isArray(workspacesData)
+  const workspaces = workspacesData && Array.isArray(workspacesData)
     ? workspacesData
-    : workspacesData?.data
-    ? workspacesData.data
+    : workspacesData && "data" in workspacesData
+    ? (workspacesData as { data: { _id: string; name: string }[] }).data
     : [];
 
   const {
@@ -92,9 +92,9 @@ export const EditTaskModal = ({
         description: task.description || "",
         status: (task.status || "todo") as TaskStatus,
         priority: (task.priority || "medium") as TaskPriority,
-        workspaceId: task.workspaceId || "",
+        workspaceId: typeof task.workspaceId === 'object' && task.workspaceId !== null && '_id' in task.workspaceId ? (task.workspaceId as { _id: string })._id : task.workspaceId || "",
         dueDate: task.dueDate ? new Date(task.dueDate) : null,
-        categoryId: task.categoryId?._id || null,
+        categoryId: task.categoryId && typeof task.categoryId === "object" ? (task.categoryId as { _id: string })._id : task.categoryId || null,
         assigneeId: task.assigneeId?._id || null,
       });
     }
@@ -125,32 +125,40 @@ export const EditTaskModal = ({
   // Handle form submission
   const onSubmit = async (data: EditTaskFormValues) => {
     // Only include changed fields
-    const changedData: any = {};
+    const changedData: Partial<EditTaskFormValues> = {};
     
-    if (data.title !== task.title) changedData.title = data.title;
-    if (data.description !== task.description) changedData.description = data.description;
-    if (data.status !== task.status) changedData.status = data.status;
-    if (data.priority !== task.priority) changedData.priority = data.priority;
-    if (data.workspaceId !== task.workspaceId) changedData.workspaceId = data.workspaceId;
+    if (data.title !== task?.title) changedData.title = data.title;
+    if (data.description !== task?.description) changedData.description = data.description;
+    if (data.status !== task?.status) changedData.status = data.status;
+    if (data.priority !== task?.priority) changedData.priority = data.priority;
+    
+    // Handle workspaceId which could be an object or string
+    const currentWorkspaceId = (typeof task?.workspaceId === 'object' && task.workspaceId !== null && '_id' in task.workspaceId
+        ? (task.workspaceId as { _id: string })._id
+        : task?.workspaceId) as string;
+    if (data.workspaceId !== currentWorkspaceId) {
+      changedData.workspaceId = data.workspaceId;
+    }
     
     // Format date or set to null if removed
     if (data.dueDate) {
-      const newDueDate = data.dueDate.toISOString();
-      if (!task.dueDate || newDueDate !== new Date(task.dueDate).toISOString()) {
-        changedData.dueDate = newDueDate;
+      if (!task?.dueDate || data.dueDate.getTime() !== new Date(task?.dueDate).getTime()) {
+        changedData.dueDate = data.dueDate.toISOString() as unknown as Date;
       }
-    } else if (task.dueDate) {
+    } else if (task?.dueDate) {
       changedData.dueDate = null;
     }
     
     // Handle category changes
-    const oldCategoryId = task.categoryId?._id || null;
+    const oldCategoryId = task && typeof task.categoryId === "object" && task.categoryId !== null
+      ? (task.categoryId as { _id: string })._id
+      : task?.categoryId;
     if (data.categoryId !== oldCategoryId) {
-      changedData.categoryId = data.categoryId;
+      changedData.categoryId = data.categoryId ?? undefined;
     }
 
     // Handle assignee changes
-    const oldAssigneeId = task.assigneeId?._id || null;
+    const oldAssigneeId = task ? (task.assigneeId?._id || null) : null;
     if (data.assigneeId !== oldAssigneeId) {
       changedData.assigneeId = data.assigneeId;
     }
@@ -304,7 +312,7 @@ export const EditTaskModal = ({
               <FormItem>
                 <FormLabel>Due Date</FormLabel>
                 <DatePicker
-                  value={dueDate}
+                  value={dueDate ?? undefined}
                   onChange={(date) => setValue("dueDate", date)}
                   placeholder="Pick a date"
                   error={errors.dueDate?.message}

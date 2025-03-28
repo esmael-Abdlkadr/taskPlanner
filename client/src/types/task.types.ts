@@ -13,6 +13,14 @@ IN_PROGRESS = "in-progress",
   URGENT = "urgent",
 }
 
+export interface Category {
+  _id: string;
+  name: string;
+  color: string;
+  icon: string;
+}
+
+
 export interface TaskTag {
   _id: string;
   name: string;
@@ -72,17 +80,20 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   workspaceId: string;
-  parentTaskId?: string;
+  parentId?: string;
   creator: TaskUserRef;
-  assignee?: TaskUserRef;
+  assigneeId?: TaskUserRef;
   tags: TaskTag[];
   subtasks: Task[];
+  depth: number;
+  position: number;
   commentCount: number;
   attachmentCount: number;
   isCompleted: boolean;
   completedAt?: string;
-  categoryId?: string;
-  favorites?: boolean;
+  categoryId: Category | string | null;
+  isFavorite?: boolean;
+  path: string[];
 }
 
 export interface CreateTaskDto {
@@ -96,7 +107,9 @@ export interface CreateTaskDto {
   assigneeId?: string;
   tags?: string[];
   categoryId?: string;
-  favorites?: boolean;
+  isFavorite?: boolean;
+  parentId?: string;
+  position?: number;
 }
 
 export interface UpdateTaskDto {
@@ -104,13 +117,13 @@ export interface UpdateTaskDto {
   description?: string;
   status?: TaskStatus;
   priority?: TaskPriority;
-  dueDate?: string | null;
+  dueDate?: Date | null;
   workspaceId?: string;
   parentTaskId?: string | null;
   assigneeId?: string | null;
   tags?: string[];
-  categoryId?: string;
-  favorites?: boolean;
+  categoryId?: string | null;  // Allow null values
+  isFavorite?: boolean;
 }
 
 export interface TaskFilter {

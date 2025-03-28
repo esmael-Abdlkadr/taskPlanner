@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { taskService } from "../services/taskService";
 import {
   Task,
@@ -7,6 +8,7 @@ import {
   TaskFilter,
 } from "../types/task.types";
 import { toast } from "react-hot-toast";
+
 export const useWorkspaceTasks = (
   workspaceId: string | undefined,
   filter: Omit<TaskFilter, "workspaceId"> = {},
@@ -25,6 +27,7 @@ export const useWorkspaceTasks = (
     enabled: !!workspaceId && options.enabled !== false, // Only run when we have a workspaceId
   });
 };
+
 export const useTask = (taskId: string) => {
   return useQuery({
     queryKey: ["task", taskId],
@@ -49,7 +52,7 @@ export const useCreateTask = () => {
   return useMutation({
     mutationFn: (taskData: CreateTaskDto) => taskService.createTask(taskData),
     onSuccess: (data, variables) => {
-      // Invalidate workspace tasks
+      console.log("data", data);
       queryClient.invalidateQueries({
         queryKey: ["workspace-tasks", variables.workspaceId],
       });
@@ -75,7 +78,7 @@ export const useUpdateTask = (taskId: string) => {
   return useMutation({
     mutationFn: (taskData: UpdateTaskDto) =>
       taskService.updateTask(taskId, taskData),
-    onSuccess: (updatedTask, variables) => {
+    onSuccess: (variables) => {
       // Update the task in the cache
       queryClient.invalidateQueries({ queryKey: ["task", taskId] });
 
@@ -243,7 +246,7 @@ export const useMoveTask = () => {
         position?: number;
       };
     }) => taskService.moveTask(taskId, options),
-    onSuccess: (updatedTask, { taskId, options }) => {
+    onSuccess: (_, { taskId, options }) => {
       // Update the specific task
       queryClient.invalidateQueries({ queryKey: ["task", taskId] });
 
@@ -303,6 +306,7 @@ export const useMoveTask = () => {
     },
   });
 };
+
 export const useToggleFavorite = () => {
   const queryClient = useQueryClient();
 
@@ -321,7 +325,7 @@ export const useToggleFavorite = () => {
       queryClient.invalidateQueries({ queryKey: ["favorite-tasks"] });
 
       toast.success(
-        updatedTask.favorites
+        updatedTask.isFavorite
           ? "Task added to favorites"
           : "Task removed from favorites"
       );
@@ -340,3 +344,62 @@ export const useFavoriteTasks = (workspaceId: string) => {
     { enabled: !!workspaceId }
   );
 };
+
+export function useAllTasks(filters?: any) {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [pagination, setPagination] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    
+    async function fetchData() {
+      setIsLoading(true);
+      try {
+        // Ensure we have page and limit
+        const queryFilters = {
+          ...filters,
+          page: filters?.page || 1,
+          limit: filters?.limit || 50
+        };
+         console.log("Query filters:", queryFilters);
+        const response = await taskService.getAllTasks(queryFilters);
+        
+        if (isMounted) {
+          if (response && response.data) {
+            setTasks(Array.isArray(response.data) ? response.data : []);
+            setPagination(response.pagination || null);
+          } else {
+            setTasks([]);
+            console.warn("Unexpected response format:", response);
+          }
+          setError(null);
+        }
+      } catch (err) {
+        console.error("Error in useAllTasks:", err);
+        if (isMounted) {
+          setError(err instanceof Error ? err : new Error('Unknown error fetching tasks'));
+          setTasks([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+    
+    fetchData();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [filters]);
+
+  return { 
+    data: tasks,
+    pagination,
+    isLoading, 
+    error 
+  };
+}

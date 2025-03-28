@@ -56,8 +56,7 @@ const ForgotPassword = () => {
         </p>
       </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <Form onSubmit={form.handleSubmit(onSubmit)} {...form} className="space-y-6">
           <FormField
             control={form.control}
             name="email"
@@ -71,7 +70,7 @@ const ForgotPassword = () => {
               </FormItem>
             )}
           />
-
+  
           <Button
             type="submit"
             className="w-full"
@@ -82,7 +81,6 @@ const ForgotPassword = () => {
             ) : null}
             Send Reset Instructions
           </Button>
-        </form>
       </Form>
 
       {forgotPassword.isSuccess && (

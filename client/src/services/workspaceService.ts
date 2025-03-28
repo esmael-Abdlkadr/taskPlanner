@@ -1,4 +1,6 @@
+import { Task } from "../types/task.types";
 import { apiRequest } from "./api";
+
 
 export interface Workspace {
   _id: string;
@@ -6,15 +8,30 @@ export interface Workspace {
   description?: string;
   ownerId: string;
   color: string;
-  icon: string;
-  isPersonal: boolean;
   isArchived: boolean;
+  isPersonal: boolean;
+  role: 'owner' | 'admin' | 'member';
+  icon: string;
   createdAt: string;
   updatedAt: string;
-  role?: 'owner' | 'admin' | 'member';
+  settings: {
+    defaultView: 'list' | 'board' | 'calendar' | 'timeline' | 'mindmap';
+    taskSort: 'position' | 'priority' | 'dueDate' | 'title' | 'createdAt';
+    taskSortDirection: 'asc' | 'desc';
+  };
+  members: WorkspaceMember[];
+  stats:
+    | {
+        totalTasks: number;
+        completedTasks: number;
+        overdueTasks: number;
+        completionRate: number;
+        memberCount: number;
+      }
+    | undefined;
 }
-
 export interface WorkspaceWithStats extends Workspace {
+  role: 'owner' | 'admin' | 'member';
   stats: {
     totalTasks: number;
     completedTasks: number;
@@ -22,7 +39,7 @@ export interface WorkspaceWithStats extends Workspace {
     completionRate: number;
     memberCount: number;
   };
-  recentTasks?: any[];
+  recentTasks?: Task[];
 }
 
 export interface WorkspaceMember {
@@ -54,10 +71,11 @@ export interface UpdateWorkspaceDto {
 }
 
 export const workspaceService = {
-  getWorkspaces: async (): Promise<Workspace[]> => {
+  getWorkspaces: async (options?: { status?: 'active' | 'archived' | 'all' }): Promise<Workspace[]> => {
+    const status = options?.status || 'active';
     const response = await apiRequest<{ status: string; data: { workspaces: Workspace[] } }>({
       method: "GET",
-      url: "/workspaces",
+      url: `/workspaces?status=${status}`,
     });
     
     return response.data.workspaces;
@@ -68,9 +86,15 @@ export const workspaceService = {
       status: string; 
       data: { 
         workspace: Workspace; 
-        stats: any;
+        stats: {
+          totalTasks: number;
+          completedTasks: number;
+          overdueTasks: number;
+          completionRate: number;
+          memberCount: number;
+        };
         role: string;
-        recentTasks: any[];
+        recentTasks: Task[];
       } 
     }>({
       method: "GET",
@@ -116,15 +140,21 @@ export const workspaceService = {
       url: `/workspaces/${workspaceId}/archive`,
     });
   },
+  restoreWorkspace: async (workspaceId: string): Promise<void> => {
+    await apiRequest({
+      method: "POST",
+      url: `/workspaces/${workspaceId}/restore`,
+    });
+  },
 
   getWorkspaceMembers: async (workspaceId: string): Promise<{ 
-    owner: any; 
+    owner: WorkspaceMember; 
     members: WorkspaceMember[] 
   }> => {
     const response = await apiRequest<{ 
       status: string; 
       data: { 
-        owner: any; 
+        owner: WorkspaceMember; 
         members: WorkspaceMember[] 
       } 
     }>({

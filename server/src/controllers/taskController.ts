@@ -41,8 +41,6 @@ export const getTasks = asyncHandler(
     } else if (parentId) {
       conditions.parentId = parentId; // Specific parent's subtasks
     }
-
-    // Additional filters
     if (status) conditions.status = status;
     if (priority) conditions.priority = priority;
     if (categoryId) conditions.categoryId = categoryId;
@@ -69,7 +67,7 @@ export const getTasks = asyncHandler(
       };
     }
 
-    // Text search
+
     if (search) {
       conditions.$or = [
         { title: { $regex: search, $options: "i" } },
@@ -110,8 +108,6 @@ export const getTasks = asyncHandler(
       // Count total for pagination
       const total = await Task.countDocuments(conditions);
 
-
-
       res.status(200).json({
         status: "success",
         data: {
@@ -130,6 +126,106 @@ export const getTasks = asyncHandler(
     }
   }
 );
+
+/**
+ * Get all tasks for the current user across all workspaces
+ */
+export const getAllTasks = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?._id;
+    
+    // Query parameters
+    const { 
+      status, 
+      priority, 
+      dueDate,
+      search,
+      sort = "updatedAt",
+      order = "desc",
+      page = 1,
+      limit = 50,
+      workspace
+    } = req.query;
+
+    console.log("req.query", req.query);
+
+
+    
+    // Build filter conditions
+    const filter: any = { 
+      $or: [
+        { ownerId: userId },
+        { assigneeId: userId }
+      ]
+    };
+    
+    // Apply optional filters
+    if (status) filter.status = status;
+    if (priority) filter.priority = priority;
+    if (workspace) filter.workspaceId = workspace;
+    
+    // Due date filters
+    if (dueDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (dueDate === 'today') {
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        filter.dueDate = { $gte: today, $lt: tomorrow };
+      } 
+      else if (dueDate === 'overdue') {
+        filter.dueDate = { $lt: today };
+        filter.status = { $ne: 'completed' };
+      }
+      else if (dueDate === 'upcoming') {
+        const nextWeek = new Date(today);
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        filter.dueDate = { $gt: today, $lte: nextWeek };
+      }
+    }
+    
+    // Search filter
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    // Calculate pagination
+    const skip = (Number(page) - 1) * Number(limit);
+    
+    // Create sort options
+    const sortOptions: any = {};
+    sortOptions[sort as string] = order === 'asc' ? 1 : -1;
+    
+    // Query tasks with population of related data
+    const tasks = await Task.find(filter)
+      .populate('workspaceId', 'name color isPersonal')
+      .populate('assigneeId', 'firstName lastName avatar')
+      .populate('categoryId', 'name color icon')
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(Number(limit));
+    
+    // Get total count for pagination
+    const total = await Task.countDocuments(filter);
+      console.log("data", tasks);
+    return res.status(200).json({
+      status: 'success',
+      data: tasks,
+      pagination: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        pages: Math.ceil(total / Number(limit))
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
 
 /**
  * Get a specific task with its subtasks
@@ -216,6 +312,7 @@ export const createTask = asyncHandler(
     if (!userId) {
       return next(new HttpError("Authentication required", 401));
     }
+
 
     const {
       title,
@@ -497,7 +594,12 @@ export const updateTask = asyncHandler(
         updateData.dueDate &&
         (!task.dueDate || new Date(updateData.dueDate) < task.dueDate) &&
         updatedTask.assigneeId &&
-        updatedTask.assigneeId._id.toString() !== userId.toString()
+        updatedTask.assigneeId &&
+        typeof updatedTask.assigneeId === "object" &&
+        "._id" in updatedTask.assigneeId &&
+        (
+          updatedTask.assigneeId as unknown as { _id: string }
+        )._id.toString() !== userId.toString()
       ) {
         // Send due date change notification to assignee
         const daysRemaining = Math.ceil(
@@ -509,7 +611,9 @@ export const updateTask = asyncHandler(
           // Only notify if due soon
           notificationService.sendDueDateReminder(
             id,
-            updatedTask.assigneeId._id.toString(),
+            (
+              updatedTask.assigneeId as unknown as { _id: string }
+            )._id.toString(),
             daysRemaining
           );
         }
@@ -519,8 +623,8 @@ export const updateTask = asyncHandler(
       if (
         updateData.status &&
         updateData.status !== task.status &&
-        task.ownerId.toString() !== userId.toString() &&
-        task.ownerId.toString() !==
+        String(task.ownerId) !== userId.toString() &&
+        String(task.ownerId) !==
           (task.assigneeId ? task.assigneeId.toString() : null)
       ) {
         // This would notify the task owner if you want to implement that
@@ -681,7 +785,7 @@ export const moveTask = asyncHandler(
 
         // If parent is in different workspace, need to move to that workspace
         if (
-          parentTask.workspaceId.toString() !== task.workspaceId.toString() &&
+          String(parentTask.workspaceId) !== String(task.workspaceId) &&
           !workspaceId
         ) {
           return next(
@@ -864,15 +968,11 @@ export const toggleTaskCompletion = asyncHandler(
   }
 );
 
-
-
 export const getSubtasks = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { parentId } = req.params;
     const userId = req.user?._id;
 
-
-    
     if (!userId) {
       return next(new HttpError("Authentication required", 401));
     }

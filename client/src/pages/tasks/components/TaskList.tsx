@@ -5,10 +5,6 @@ import {
   CheckCircle,
   Clock,
   Calendar,
-  ArrowUp,
-  ArrowRight,
-  ArrowDown,
-  AlertCircle,
   MoreVertical,
   Star,
   Trash2,
@@ -17,7 +13,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Task } from '../../../types/task.types';
-import { Avatar } from '../../../components/ui/avatar';
+import { Avatar } from '../../../components/common/Avatar';
 import Button from '../../../components/ui/button';
 import { Dropdown } from '../../../components/ui/dropdown';
 import { useToggleFavorite } from '../../../hooks/useTask';
@@ -35,7 +31,6 @@ interface TaskListProps {
 const TaskList: React.FC<TaskListProps> = ({ 
   tasks, 
   sortBy = 'updatedAt', 
-  workspaceId,
   onEditTask,
   onDeleteTask
 }) => {
@@ -75,15 +70,6 @@ const TaskList: React.FC<TaskListProps> = ({
     toggleFavorite.mutate(taskId);
   };
 
-  const getPriorityIcon = (priority: string) => {
-    switch(priority) {
-      case 'urgent': return <ArrowUp className="h-3.5 w-3.5 text-red-500" />;
-      case 'high': return <ArrowUp className="h-3.5 w-3.5 text-orange-500" />;
-      case 'medium': return <ArrowRight className="h-3.5 w-3.5 text-blue-500" />;
-      case 'low': return <ArrowDown className="h-3.5 w-3.5 text-green-500" />;
-      default: return null;
-    }
-  };
 
   // Animation variants
   const containerVariants = {
@@ -131,7 +117,7 @@ const TaskList: React.FC<TaskListProps> = ({
                   <div className="h-5 w-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
                     <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                   </div>
-                ) : task.status === 'in-progress' ? (
+                ) : task.status === 'in_progress' ? (
                   <div className="h-5 w-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                     <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   </div>
@@ -235,7 +221,7 @@ const TaskList: React.FC<TaskListProps> = ({
                   <Avatar
                     src={task.assigneeId.avatar}
                     name={`${task.assigneeId.firstName} ${task.assigneeId.lastName || ''}`}
-                    size="xs"
+                    size="lg"
                   />
                   <span className="ml-1">{task.assigneeId.firstName}</span>
                 </div>

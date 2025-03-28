@@ -1,7 +1,7 @@
 import * as React from "react"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
-import { cn } from "@/lib/utils"
+import { cn } from "../../lib/utils"
 
 function TooltipProvider({
   delayDuration = 0,
@@ -16,12 +16,28 @@ function TooltipProvider({
   )
 }
 
+interface ExtendedTooltipProps
+  extends React.ComponentProps<typeof TooltipPrimitive.Root> {
+  content?: React.ReactNode
+  side?: "top" | "right" | "bottom" | "left"
+  sideOffset?: number
+}
+
 function Tooltip({
+  children,
+  content,
+  side = "top",
+  sideOffset = 0,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+}: ExtendedTooltipProps) {
   return (
     <TooltipProvider>
-      <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+      <TooltipPrimitive.Root data-slot="tooltip" {...props}>
+        <TooltipTrigger>{children}</TooltipTrigger>
+        <TooltipContent side={side} sideOffset={sideOffset}>
+          {content}
+        </TooltipContent>
+      </TooltipPrimitive.Root>
     </TooltipProvider>
   )
 }

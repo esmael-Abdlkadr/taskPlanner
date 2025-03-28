@@ -18,10 +18,9 @@ export const DeleteTaskModal = ({
 }: DeleteTaskModalProps) => {
   const { data: taskData } = useTask(taskId);
   const deleteTask = useDeleteTask();
-  
-  // Get task and any subtasks info
-  const task = taskData?.task || taskData;
-  const hasSubtasks = task?.subtasks?.length > 0;
+
+  const task = taskData?.task; 
+  const hasSubtasks = (task?.subtasks?.length ?? 0) > 0;
   
   const handleDelete = async () => {
     await deleteTask.mutateAsync(taskId, {

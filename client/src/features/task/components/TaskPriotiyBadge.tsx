@@ -1,13 +1,10 @@
-import { cn } from "../../../lib/utils"; 
-import { TaskStatus } from "../../../types/task.types";
-
-type TaskPriority = "low" | "medium" | "high" | "urgent";
+import { cn } from "../../../lib/utils";
+import { TaskPriority } from "../../../types/task.types";
 
 interface TaskPriorityBadgeProps {
   priority: TaskPriority;
   size?: "sm" | "md";
   className?: string;
-  status: TaskStatus;
 }
 
 const TaskPriorityBadge = ({ priority, size = "md", className }: TaskPriorityBadgeProps) => {

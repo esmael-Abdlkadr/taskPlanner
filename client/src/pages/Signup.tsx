@@ -15,7 +15,7 @@ import {
 import Input from "../components/ui/input";
 import Checkbox from "../components/ui/checkbox";
 import { motion } from "framer-motion";
-import { UserPlus, Loader, ArrowLeft } from "lucide-react";
+import { UserPlus, ArrowLeft } from "lucide-react";
 
 // Form validation schema
 const signupSchema = z

@@ -15,12 +15,12 @@ interface DropdownProps {
   placement?: 'top' | 'bottom' | 'left' | 'right';
 }
 
-export const Dropdown = ({ trigger, items, placement = 'bottom-end' }: DropdownProps) => {
+export const Dropdown = ({ trigger, items, placement = 'bottom' }: DropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-  const [referenceElement, setReferenceElement] = useState<HTMLButtonElement | null>(null);
+  const [referenceElement, setReferenceElement] = useState<HTMLDivElement | null>(null);
   const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
   
   const { styles, attributes } = usePopper(referenceElement, popperElement, {

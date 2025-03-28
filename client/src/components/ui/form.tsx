@@ -1,5 +1,5 @@
 import React from "react";
-import { Controller, useFormContext } from "react-hook-form";
+import { Controller, Control, FieldValues, FieldPath, ControllerRenderProps, ControllerFieldState, UseFormStateReturn } from "react-hook-form";
 
 // Basic Form container
 export const Form = ({
@@ -69,15 +69,26 @@ export const FormError = ({
   );
 };
 
-// Form field - react-hook-form compatible version
-export const FormField = ({
+// Form field - react-hook-form compatible version with proper TypeScript types
+export const FormField = <
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+>({
   name,
   control,
   render,
 }: {
-  name: string;
-  control: any;
-  render: ({ field }: { field: any }) => React.ReactNode;
+  name: TName;
+  control: Control<TFieldValues>;
+  render: ({
+    field,
+    fieldState,
+    formState,
+  }: {
+    field: ControllerRenderProps<TFieldValues, TName>;
+    fieldState: ControllerFieldState;
+    formState: UseFormStateReturn<TFieldValues>;
+  }) => React.ReactElement;
 }) => {
   return <Controller name={name} control={control} render={render} />;
 };

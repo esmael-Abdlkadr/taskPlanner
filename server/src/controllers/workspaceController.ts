@@ -12,6 +12,7 @@ import {
   addWorkspaceMemberSchema,
   updateWorkspaceMemberSchema,
 } from "../validators/validatorSchema";
+import sendEmail from "../utils/sendEmail";
 
 /**
  * Get all workspaces for the current user
@@ -19,16 +20,29 @@ import {
 export const getWorkspaces = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.user?._id;
+    // Get the includeArchived parameter from query string
+    const includeArchived = req.query.includeArchived === "true";
+    // Get the status parameter (can be 'all', 'active', or 'archived')
+    const status = (req.query.status as string) || "active";
 
     if (!userId) {
       return next(new HttpError("Authentication required", 401));
     }
 
     try {
+      // Prepare filter based on archive status
+      let archivedFilter = {};
+      if (status === "active") {
+        archivedFilter = { isArchived: { $ne: true } };
+      } else if (status === "archived") {
+        archivedFilter = { isArchived: true };
+      }
+      // If status is 'all', don't filter by archived status
+
       // Find workspaces owned by user
       const ownedWorkspaces = await Workspace.find({
         ownerId: userId,
-        isArchived: { $ne: true },
+        ...archivedFilter,
       }).sort({ updatedAt: -1 });
 
       // Find workspaces where user is a member
@@ -40,7 +54,7 @@ export const getWorkspaces = asyncHandler(
 
       const memberWorkspaces = await Workspace.find({
         _id: { $in: memberWorkspaceIds },
-        isArchived: { $ne: true },
+        ...archivedFilter,
       });
 
       // Combine and format results
@@ -394,6 +408,59 @@ export const archiveWorkspace = asyncHandler(
 );
 
 /**
+ * Restore an archived workspace
+ */
+export const restoreWorkspace = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+    const userId = req.user?._id;
+
+    if (!userId) {
+      return next(new HttpError("Authentication required", 401));
+    }
+
+    try {
+      // Check if workspace exists and user is owner
+      const workspace = await Workspace.findOne({
+        _id: id,
+        ownerId: userId,
+        isArchived: true,
+      });
+
+      if (!workspace) {
+        return next(
+          new HttpError(
+            "Workspace not found or you don't have permission to restore it",
+            404
+          )
+        );
+      }
+
+      // Restore the workspace
+      workspace.isArchived = false;
+      await workspace.save();
+
+      // Log activity
+      await ActivityLog.create({
+        entityId: workspace._id,
+        entityType: "workspace",
+        userId,
+        action: "update",
+        details: { name: workspace.name, restored: true },
+      });
+
+      res.status(200).json({
+        status: "success",
+        message: "Workspace restored successfully",
+      });
+    } catch (error) {
+      console.error("Error restoring workspace:", error);
+      return next(new HttpError("Failed to restore workspace", 500));
+    }
+  }
+);
+
+/**
  * Get workspace members
  */
 export const getWorkspaceMembers = asyncHandler(
@@ -473,19 +540,28 @@ export const addWorkspaceMember = asyncHandler(
       // Check if workspace exists and user is owner or admin
       const workspace = await Workspace.findOne({
         _id: id,
-        $or: [
-          { ownerId: userId },
-          // Would need to check if user is admin
-        ],
-      });
+      }).populate("ownerId", "firstName lastName email");
 
       if (!workspace) {
-        return next(
-          new HttpError(
-            "Workspace not found or you don't have permission to add members",
-            404
-          )
-        );
+        return next(new HttpError("Workspace not found", 404));
+      }
+
+      // Check if user is owner or admin
+      if ((workspace.ownerId as any)._id.toString() !== userId.toString()) {
+        const isMemberAdmin = await WorkspaceMember.findOne({
+          workspaceId: id,
+          userId,
+          role: "admin",
+        });
+
+        if (!isMemberAdmin) {
+          return next(
+            new HttpError(
+              "You don't have permission to add members to this workspace",
+              403
+            )
+          );
+        }
       }
 
       // Find user by email
@@ -498,8 +574,8 @@ export const addWorkspaceMember = asyncHandler(
 
       // Check if user is already the owner
       if (
-        (workspace.ownerId as any).toString() ===
-        (userToAdd._id as any).toString()
+        (workspace.ownerId as any)._id.toString() ===
+        (userToAdd._id as string).toString()
       ) {
         return next(new HttpError("User is already the workspace owner", 400));
       }
@@ -514,6 +590,12 @@ export const addWorkspaceMember = asyncHandler(
         return next(
           new HttpError("User is already a member of this workspace", 400)
         );
+      }
+
+      // Find inviter details for the email
+      const inviter = await User.findById(userId).select("firstName lastName");
+      if (!inviter) {
+        return next(new HttpError("Inviter not found", 500));
       }
 
       // Add user as member
@@ -546,7 +628,29 @@ export const addWorkspaceMember = asyncHandler(
         },
       });
 
-      // TODO: Send email notification to the user
+      // Send invitation email
+      const appUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      const workspaceUrl = `${appUrl}/workspaces/${workspace._id}`;
+      const emailData = {
+        userName: userToAdd.firstName,
+        inviterName: `${inviter.firstName} ${inviter.lastName}`,
+        workspaceName: workspace.name,
+        role: role,
+        appUrl: appUrl,
+        workspaceUrl: workspaceUrl,
+      };
+
+      try {
+        await sendEmail({
+          email: userToAdd.email,
+          subject: `You've been invited to ${workspace.name} workspace on TaskNest`,
+          template: "workspace-invitation",
+          date: emailData,
+        });
+      } catch (emailError) {
+        console.error("Failed to send invitation email:", emailError);
+        // Continue with the response even if email fails
+      }
 
       res.status(201).json({
         status: "success",
@@ -691,6 +795,25 @@ export const removeWorkspaceMember = asyncHandler(
 
       // Store data for activity log before deletion
       const memberEmail = (member.userId as any).email;
+
+      // Inside your removeWorkspaceMember function, after storing memberEmail:
+      try {
+        const removedUser = await User.findOne({ email: memberEmail });
+        if (removedUser) {
+          await sendEmail({
+            email: memberEmail,
+            subject: `You've been removed from ${workspace.name} workspace on TaskNest`,
+            template: "workspaceRemoval",
+            date: {
+              userName: removedUser.firstName,
+              workspaceName: workspace.name,
+              appUrl: process.env.FRONTEND_URL || "http://localhost:5173",
+            },
+          });
+        }
+      } catch (emailError) {
+        console.error("Failed to send removal notification email:", emailError);
+      }
 
       // Remove membership
       await WorkspaceMember.findByIdAndDelete(memberId);

@@ -32,12 +32,26 @@ export const taskService = {
 
   // Get a specific task by ID
   getTaskById: async (taskId: string) => {
-    const response = (await apiRequest<{ data: { data: Task } }>({
-      method: "GET",
-      url: `/tasks/${taskId}`,
-    })) as { data: { data: Task } };
-
-    return response.data;
+    try {
+      const response = await apiRequest<{
+        status: string;
+        data: {
+          task: Task;
+          parentTask: Task | null;
+        };
+      }>({
+        method: "GET",
+        url: `/tasks/${taskId}`,
+      });
+      
+      return {
+        task: response.data.task,
+        parentTask: response.data.parentTask
+      };
+    } catch (error) {
+      console.error(`Error fetching task ${taskId}:`, error);
+      throw error;
+    }
   },
   toggleFavorite: async (taskId: string) => {
     const response = await apiRequest<{ data: { task: Task  } }>({
@@ -60,6 +74,8 @@ export const taskService = {
 
   // Create a new task
   createTask: async (taskData: CreateTaskDto) => {
+
+    console.log("taskData",taskData)
     const response = await apiRequest<{ data: { data: { task: Task } } }>({
       method: "POST",
       url: "/tasks",
@@ -140,12 +156,53 @@ export const taskService = {
   },
 
   getTaskHierarchy: async (taskId: string) => {
-    const response = await apiRequest<{ data: any }>({
+    const response = await apiRequest<{ data: unknown }>({
       method: "GET",
       url: `/tasks/${taskId}/hierarchy`,
     });
     return response.data;
   },
   
+  getAllTasks: async (filters?: {
+    status?: string;
+    priority?: string;
+    dueDate?: string;
+    search?: string;
+    sort?: string;
+    order?: string;
+    page?: number;
+    limit?: number;
+    workspace?: string;
+  }) => {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Set default pagination if not provided
+      if (!filters?.page) queryParams.set('page', '1');
+      if (!filters?.limit) queryParams.set('limit', '50');
+      
+      if (filters) {
+        Object.entries(filters).forEach(([key, val]) => {
+
+          if (val !== undefined && val !== null && val !== "all") {
+            queryParams.set(key, String(val));
+          }
+        });
+      }
+      
+      const url = `/tasks/all?${queryParams.toString()}`;
+  
+      
+      const response = await apiRequest<{ data: Task[], pagination?: any }>({
+        method: "GET",
+        url: url,
+      });
+      
+      return response;  
+    } catch (error) {
+      console.error("Error fetching all tasks:", error);
+      throw error;
+    }
+  },
 
 };

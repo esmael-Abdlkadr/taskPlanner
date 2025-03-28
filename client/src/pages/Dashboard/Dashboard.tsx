@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useWorkspaceTasks } from "../../hooks/useTask";
 import { useWorkspaces } from "../../hooks/useWorkspace";
 import { useAuthStore } from "../../store/authStore";
@@ -19,12 +19,19 @@ import RecentTasks from "./component/RecentTask";
 import WorkspaceOverview from "./component/WorkspaceOverview";
 import ActivityFeed from "./component/ActivityFeed";
 import { CreateTaskDialog } from "../../features/task/components/CreateTask";
+import { Task } from "../../types/task.types";
+import { Workspace } from "../../services/workspaceService";
+
+
 
 const Dashboard = () => {
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const { user } = useAuthStore();
-  const { data: workspaces, isLoading: workspacesLoading } = useWorkspaces();
+  const { data: workspacesData, isLoading: workspacesLoading } = useWorkspaces();
 
+  // Ensure workspaces are properly typed
+  const workspaces = workspacesData as Workspace[] | undefined;
+  
   console.log("workspaces", workspaces);
 
   // Calculate today and next 7 days for due soon tasks
@@ -37,19 +44,23 @@ const Dashboard = () => {
   const personalWorkspace = workspaces?.find((ws) => ws.isPersonal);
   const defaultWorkspaceId = personalWorkspace?._id || workspaces?.[0]?._id;
 
-
-
   // Fetch tasks for the first workspace - ONLY when we have a valid workspace ID
   const workspaceTasks = useWorkspaceTasks(defaultWorkspaceId || undefined);
-  const workspaceData = defaultWorkspaceId ? workspaceTasks.data : null;
+  
+  // API returns tasks array directly, not an object with tasks property
+  const allTasks = useMemo(() => {
+    if (Array.isArray(workspaceTasks.data)) {
+      return workspaceTasks.data;
+    }
+    return (workspaceTasks.data as { tasks?: Task[] } | undefined)?.tasks || [];
+  }, [workspaceTasks.data]);
   const tasksLoading = defaultWorkspaceId ? workspaceTasks.isLoading : false;
-  console.log("alltaks", workspaceData);
-  // Extract tasks from workspace data
-  const allTasks = workspaceData?.tasks || [];
+  
+  console.log("alltaks", allTasks);
 
   // Filter tasks for due soon (next 7 days)
   const dueSoonTasks = useMemo(() => {
-    return allTasks.filter((task) => {
+    return allTasks.filter((task: Task) => {
       if (!task.dueDate) return false;
       const dueDate = new Date(task.dueDate);
       return (
@@ -62,7 +73,7 @@ const Dashboard = () => {
   // Get recent tasks (most recently updated first)
   const recentTasks = useMemo(() => {
     return [...allTasks]
-      .sort((a, b) =>
+      .sort((a: Task, b: Task) =>
         compareDesc(
           new Date(a.updatedAt || a.createdAt),
           new Date(b.updatedAt || b.createdAt)
@@ -71,34 +82,13 @@ const Dashboard = () => {
       .slice(0, 5);
   }, [allTasks]);
 
-  // Add this code near your workspace extraction to help debug
-  useEffect(() => {
-    console.log("Raw workspaces data:", workspaces);
-
-    // Check if workspaces is an array
-    if (Array.isArray(workspaces)) {
-      console.log("Workspaces is an array with length:", workspaces.length);
-      workspaces.forEach((ws, i) => {
-        console.log(`Workspace ${i}:`, ws._id, ws.name);
-      });
-    } else {
-      console.log("Workspaces is not an array:", typeof workspaces);
-    }
-
-    // Log the extracted workspaceId
-    console.log("Selected workspace ID:", defaultWorkspaceId);
-  }, [workspaces, defaultWorkspaceId]);
-
-  // Calculate basic stats from available tasks
-  console.log("alltask", allTasks);
-
   const taskStats = useMemo(() => {
     const total = allTasks.length;
-    const completed = allTasks.filter((t) => t.status === "completed").length;
+    const completed = allTasks.filter((t: Task) => t.status === "completed").length;
     const inProgress = allTasks.filter(
-      (t) => t.status === "in-progress"
+      (t: Task) => t.status === "in_progress"
     ).length;
-    const overdue = allTasks.filter((t) => {
+    const overdue = allTasks.filter((t: Task) => {
       if (!t.dueDate) return false;
       const dueDate = new Date(t.dueDate);
       return dueDate < today && t.status !== "completed";
@@ -281,7 +271,13 @@ const Dashboard = () => {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : workspaces && workspaces.length > 0 ? (
-            <WorkspaceOverview workspaces={workspaces} />
+            <WorkspaceOverview 
+              workspaces={workspaces.map(ws => ({
+                ...ws,
+                // Ensure description is never undefined to match WorkspaceOverview's expected type
+                description: ws.description || ""
+              }))} 
+            />
           ) : (
             <div className="flex flex-col items-center justify-center h-64 bg-card rounded-lg p-8 text-center">
               <h3 className="text-lg font-medium">No workspaces yet</h3>
@@ -314,7 +310,14 @@ const Dashboard = () => {
 };
 
 // Simple StatCard component for the stats section
-const StatCard = ({ title, value, description, icon }) => {
+interface StatCardProps {
+  title: string;
+  value: number | string;
+  description: string;
+  icon: React.ReactNode;
+}
+
+const StatCard = ({ title, value, description, icon }: StatCardProps) => {
   return (
     <div className="bg-card rounded-lg p-6 border shadow-sm">
       <div className="flex justify-between items-center">

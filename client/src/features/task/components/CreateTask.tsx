@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -7,7 +7,7 @@ import { TaskPriority, TaskStatus } from "../../../types/task.types";
 import { useWorkspaces } from "../../../hooks/useWorkspace";
 import { useCategories } from "../../../hooks/useCategory";
 
-// Import our custom components
+
 import Modal, {
   ModalBody,
   ModalFooter,
@@ -51,17 +51,21 @@ export const CreateTaskDialog = ({
   // Track the current step of the creation process
   const [step, setStep] = useState<"category" | "details">("category");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
-  
+
   const createTask = useCreateTask();
   const { data: workspacesData, isLoading: workspacesLoading } = useWorkspaces();
   const { data: categories } = useCategories();
 
   // Extract workspaces array safely - adjust this based on your actual data structure
-  const workspaces = Array.isArray(workspacesData)
-    ? workspacesData
-    : workspacesData?.data
-    ? workspacesData.data
-    : [];
+  const workspaces = useMemo(() => {
+    if (Array.isArray(workspacesData)) {
+      return workspacesData;
+    }
+    if (workspacesData && typeof workspacesData === "object" && "data" in workspacesData) {
+      return (workspacesData as { data: any[] }).data;
+    }
+    return [];
+  }, [workspacesData]);
 
   const {
     register,
@@ -128,9 +132,11 @@ export const CreateTaskDialog = ({
         ...data,
         description: data.description || "",
         dueDate: data.dueDate ? data.dueDate.toISOString() : undefined,
-        parentId: parentTaskId, // Make sure parentId is passed for subtasks
+        parentId: parentTaskId, 
         categoryId: selectedCategoryId,
       },
+
+
       {
         onSuccess: () => {
           onOpenChange(false);

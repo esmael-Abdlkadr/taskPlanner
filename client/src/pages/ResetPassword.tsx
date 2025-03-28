@@ -75,8 +75,7 @@ const ResetPassword = () => {
         </p>
       </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <Form onSubmit={form.handleSubmit(onSubmit)} {...form}>
           <FormField
             control={form.control}
             name="password"
@@ -86,12 +85,12 @@ const ResetPassword = () => {
                 <FormControl>
                   <Input type="password" placeholder="••••••••" {...field} />
                 </FormControl>
-
+    
                 <FormMessage />
               </FormItem>
             )}
           />
-
+          
           <FormField
             control={form.control}
             name="confirmPassword"
@@ -105,7 +104,7 @@ const ResetPassword = () => {
               </FormItem>
             )}
           />
-
+          
           <Button
             type="submit"
             className="w-full"
@@ -116,7 +115,6 @@ const ResetPassword = () => {
             ) : null}
             Reset Password
           </Button>
-        </form>
       </Form>
 
       {resetPassword.isSuccess && (

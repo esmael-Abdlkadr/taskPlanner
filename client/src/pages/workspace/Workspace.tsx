@@ -1,18 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Plus, 
-  Filter, 
   Search, 
   CheckSquare, 
-  Clock,
   Settings, 
-  ArrowLeft,
-  SlidersHorizontal
-} from 'lucide-react';
+  ArrowLeft} from 'lucide-react';
 import { useWorkspace } from '../../hooks/useWorkspace';
 import { useWorkspaceTasks } from '../../hooks/useTask';
-import { TaskStatus, TaskPriority } from '../../types/task.types';
+import { Task, TaskStatus, TaskPriority } from '../../types/task.types';
 import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
 import Select from '../../components/ui/select';
@@ -48,7 +44,7 @@ const WorkspaceTasksPage = () => {
   // Extract tasks from response
   const tasks = Array.isArray(tasksResponse) 
     ? tasksResponse 
-    : tasksResponse?.tasks || [];
+    : (tasksResponse as unknown as { tasks?: Task[] })?.tasks || [];
   
   // Status filter options
   const statusOptions = [
@@ -224,7 +220,7 @@ const WorkspaceTasksPage = () => {
               value={statusFilter}
               onChange={setStatusFilter}
               placeholder="Status"
-              leftIcon={<Filter className="h-4 w-4" />}
+        
             />
           </div>
           
@@ -234,7 +230,7 @@ const WorkspaceTasksPage = () => {
               value={priorityFilter}
               onChange={setPriorityFilter}
               placeholder="Priority"
-              leftIcon={<Filter className="h-4 w-4" />}
+             
             />
           </div>
           
@@ -244,7 +240,7 @@ const WorkspaceTasksPage = () => {
               value={sortBy}
               onChange={setSortBy}
               placeholder="Sort by"
-              leftIcon={<SlidersHorizontal className="h-4 w-4" />}
+            
             />
           </div>
         </div>

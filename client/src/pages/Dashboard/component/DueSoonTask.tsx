@@ -47,7 +47,7 @@ const DueSoonTasks = ({ tasks }: DueSoonTasksProps) => {
         >
           <Checkbox
             checked={task.isCompleted}
-            onCheckedChange={() =>
+            onChange={() =>
               !task.isCompleted && handleTaskComplete(task._id)
             }
             className="mt-1"

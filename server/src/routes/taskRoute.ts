@@ -10,12 +10,14 @@ import {
   toggleTaskCompletion,
   toggleFavorite,
   getSubtasks,
+  getAllTasks,
 } from "../controllers/taskController";
 import { protect } from "../middleware/authMiddleware";
 
 const router = express.Router();
 router.get("/workspaces/:workspaceId/tasks", protect, getTasks);
 router.post("/tasks", protect, createTask);
+router.get("/tasks/all", protect, getAllTasks);
 router.get("/tasks/:id", protect, getTask);
 router.put("/tasks/:id", protect, updateTask);
 router.delete("/tasks/:id", protect, deleteTask);
@@ -27,6 +29,72 @@ router.post("/tasks/:id/complete", protect, toggleTaskCompletion);
 router.post("/tasks/:id/favorite", protect, toggleFavorite);
 
 router.get("/tasks/:parentId/subtasks", protect, getSubtasks);
+
+/**
+ * @swagger
+ * /api/tasks/all:
+ *   get:
+ *     summary: Get all tasks for the current user across all workspaces
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *         description: Filter by task status
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *         description: Filter by task priority
+ *       - in: query
+ *         name: dueDate
+ *         schema:
+ *           type: string
+ *           enum: [today, overdue, upcoming]
+ *         description: Filter by due date
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search in title and description
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *         description: Sorting field
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *         description: Sort order
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Items per page
+ *       - in: query
+ *         name: workspace
+ *         schema:
+ *           type: string
+ *         description: Filter tasks by workspace
+ *     responses:
+ *       200:
+ *         description: List of tasks
+ *       401:
+ *         description: Unauthorized
+ */
+
 /**
  * @swagger
  * /api/workspaces/{workspaceId}/tasks:

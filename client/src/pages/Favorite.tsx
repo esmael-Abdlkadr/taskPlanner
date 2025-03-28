@@ -17,7 +17,7 @@ import { useWorkspaceTasks } from '../hooks/useTask';
 import { Task, TaskPriority } from '../types/task.types';  
 import Select from '../components/ui/select';
 import Button from '../components/ui/button';
-import { Avatar } from '../components/ui/avatar'; 
+import { Avatar } from '../components/common/Avatar'; 
 import TaskStatusBadge from '../features/task/components/TaskStatusBadge';
 import TaskPriorityBadge from '../features/task/components/TaskPriotiyBadge';
 import EmptyState from '../components/ui/EmptyState';
@@ -52,17 +52,6 @@ const cardVariants = {
 // Extended task interface with our custom fields
 interface EnhancedTask extends Task {
   favoriteReason?: 'starred' | 'urgent' | 'overdue' | 'dueSoon';
-}
-
-// API response interface
-interface TasksResponse {
-  tasks: Task[];
-  pagination: {
-    total: number;
-    page: number;
-    pages: number;
-    limit: number;
-  };
 }
 
 const FavoritesPage = () => {
@@ -116,30 +105,30 @@ const FavoritesPage = () => {
 
   // Extract tasks from responses with proper structure handling
   const favoriteTasks = useMemo(() => 
-    Array.isArray(favoritesResponse) 
-      ? favoritesResponse 
-      : favoritesResponse?.tasks || [], 
-    [favoritesResponse]
-  );
+      Array.isArray(favoritesResponse) 
+        ? favoritesResponse 
+        : (favoritesResponse && 'tasks' in favoritesResponse ? (favoritesResponse as { tasks: EnhancedTask[] }).tasks : []), 
+      [favoritesResponse]
+    );
   
   const urgentTasks = useMemo(() => 
     Array.isArray(urgentResponse) 
       ? urgentResponse 
-      : urgentResponse?.tasks || [], 
+      : ((urgentResponse as unknown) as { tasks?: EnhancedTask[] })?.tasks || [], 
     [urgentResponse]
   );
   
   const highPriorityTasks = useMemo(() => 
     Array.isArray(highPriorityResponse) 
       ? highPriorityResponse 
-      : highPriorityResponse?.tasks || [], 
+      : (highPriorityResponse && 'tasks' in highPriorityResponse ? (highPriorityResponse as { tasks: EnhancedTask[] }).tasks : []), 
     [highPriorityResponse]
   );
   
   const allWorkspaceTasks = useMemo(() => 
     Array.isArray(allTasksResponse) 
       ? allTasksResponse 
-      : allTasksResponse?.tasks || [], 
+      : (allTasksResponse && 'tasks' in allTasksResponse ? (allTasksResponse as { tasks: EnhancedTask[] }).tasks : []), 
     [allTasksResponse]
   );
 
@@ -247,7 +236,7 @@ const FavoritesPage = () => {
     label: workspace.name
   })) || [];
   
-  // Loading state
+
   const isLoading = workspacesLoading || favoritesLoading || urgentLoading || highPriorityLoading || allTasksLoading;
   
   if (isLoading) {
@@ -508,7 +497,7 @@ const FavoritesPage = () => {
                       <Avatar
                         src={task.assigneeId.avatar}
                         name={`${task.assigneeId.firstName} ${task.assigneeId.lastName}`}
-                        size="xs"
+                        size="sm"
                       />
                       <span className="ml-1">{task.assigneeId.firstName}</span>
                     </div>
@@ -524,11 +513,11 @@ const FavoritesPage = () => {
                   <div 
                     className="inline-flex items-center px-2 py-1 text-xs rounded-full"
                     style={{ 
-                      backgroundColor: `${task.categoryId.color}20`,
-                      color: task.categoryId.color
+                      backgroundColor: `${(task.categoryId as { color: string, name: string }).color}20`,
+                      color: (task.categoryId as { color: string, name: string }).color
                     }}
                   >
-                    {task.categoryId.name}
+                    {(task.categoryId as { color: string, name: string }).name}
                   </div>
                 ) : (
                   <div />

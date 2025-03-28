@@ -760,7 +760,7 @@ const Landing = () => {
                 <Button
                   size="lg"
                   className="h-14 px-8 text-base shadow-md relative overflow-hidden"
-                  asChild
+                
                 >
                   <Link to="/signup">
                     Create Free Account
@@ -777,7 +777,7 @@ const Landing = () => {
                   variant="outline"
                   size="lg"
                   className="h-14 px-8 text-base bg-white/90 dark:bg-gray-900/90"
-                  asChild
+              
                 >
                   <Link to="#" className="gap-2 group">
                     Watch Demo

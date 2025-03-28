@@ -23,7 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Avatar } from "../common/Avatar";
 import Input from "../ui/input";
 import { useTheme } from "../../hooks/useTheme";
 import { cn } from "../../lib/utils";
@@ -90,7 +90,7 @@ const Header = ({
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
-          size="icon"
+        
           className="md:hidden"
           onClick={toggleMobileMenu}
         >
@@ -99,7 +99,7 @@ const Header = ({
 
         <Button
           variant="ghost"
-          size="icon"
+  
           className="hidden md:flex"
           onClick={toggleSidebar}
           title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -138,7 +138,7 @@ const Header = ({
               />
               <Button
                 variant="ghost"
-                size="icon"
+    
                 className="h-8 w-8"
                 onClick={() => setShowSearch(false)}
               >
@@ -148,7 +148,7 @@ const Header = ({
           ) : (
             <Button
               variant="ghost"
-              size="icon"
+      
               onClick={() => setShowSearch(true)}
             >
               <Search className="h-5 w-5" />
@@ -159,7 +159,7 @@ const Header = ({
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" >
               <Bell className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
@@ -173,7 +173,7 @@ const Header = ({
         </DropdownMenu>
 
         {/* Theme Toggle */}
-        <Button variant="ghost" size="icon" onClick={toggleTheme}>
+        <Button variant="ghost"  onClick={toggleTheme}>
           {theme === "dark" ? (
             <Sun className="h-5 w-5" />
           ) : (
@@ -189,12 +189,8 @@ const Header = ({
               size="sm"
               className="relative h-9 w-9 rounded-full"
             >
-              <Avatar className="h-9 w-9">
-                <AvatarImage src={user?.avatar} />
-                <AvatarFallback className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
-                  {getInitials()}
-                </AvatarFallback>
-              </Avatar>
+              <Avatar className="h-9 w-9" name={getInitials()} />
+            
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

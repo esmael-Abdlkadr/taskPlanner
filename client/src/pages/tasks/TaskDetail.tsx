@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useTask, useUpdateTask, useDeleteTask, useToggleFavorite } from "../../hooks/useTask";
+import { useTask, useUpdateTask, useToggleFavorite } from "../../hooks/useTask";
 import { format, isValid } from "date-fns";
 import { 
   ArrowLeft, 
@@ -14,7 +14,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import Button from "../../components/ui/button";
-import { Avatar } from "../../components/ui/avatar";
+import { Avatar } from "../../components/common/Avatar";
 import TaskStatusBadge from "../../features/task/components/TaskStatusBadge";
 import TaskPriorityBadge from "../../features/task/components/TaskPriotiyBadge";
 
@@ -22,6 +22,7 @@ import { cn } from "../../lib/utils";
 import { TaskTree } from "./components/subTaskManager";
 import { EditTaskModal } from "./components/EditTasks";
 import { DeleteTaskModal } from "./components/DeleteModal";
+import { Category, TaskStatus } from "../../types/task.types";
 
 // Safe date formatting helper function
 const formatDate = (dateString: string | undefined | null) => {
@@ -37,26 +38,26 @@ const formatDate = (dateString: string | undefined | null) => {
     return dateString;
   }
 };
+function isCategory(category: unknown): category is Category {
+  return typeof category === 'object' && category !== null &&
+    'name' in (category as Category) && 
+    'color' in (category as Category) && 
+    'icon' in category;
+}
+
 
 const TaskDetail = () => {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
   
   const [editTaskOpen, setEditTaskOpen] = useState(false);
-  const [deleteTaskOpen, setDeleteTaskOpen] = useState(false); // State for delete modal
+  const [deleteTaskOpen, setDeleteTaskOpen] = useState(false); 
   
   const { data, isLoading, error } = useTask(taskId || "");
-  
-  // Extract the task from the response structure
-  const task = data?.task || data;
-
-  console.log("task",task)
-  
+  const task = data?.task;
   const updateTask = useUpdateTask(taskId || "");
-  const deleteTask = useDeleteTask();
-  const toggleFavorite = useToggleFavorite();
 
-  console.log("task data:", data);
+  const toggleFavorite = useToggleFavorite();
   
   // Navigate back if task not found
   useEffect(() => {
@@ -85,7 +86,7 @@ const TaskDetail = () => {
   };
   
   const handleStatusChange = (status: string) => {
-    updateTask.mutate({ status });
+    updateTask.mutate({ status: status as TaskStatus });
   };
   
   // Updated to use the delete modal instead of confirm dialog
@@ -95,12 +96,13 @@ const TaskDetail = () => {
   
   // Get the right icon color based on the category
   const getCategoryColor = () => {
-    return task.categoryId?.color || "#6366F1";
+    if (!task.categoryId) return "#6366F1";
+    return isCategory(task.categoryId) ? task.categoryId.color : "#6366F1";
   };
   
   // Get the right icon based on the category
   const getCategoryIcon = () => {
-    if (!task.categoryId) return null;
+    if (!task.categoryId || !isCategory(task.categoryId)) return null;
     
     switch (task.categoryId.icon) {
       case "user": return "👤";
@@ -186,16 +188,16 @@ const TaskDetail = () => {
               <TaskPriorityBadge priority={task.priority} />
               
               {task.categoryId && (
-                <div 
-                  className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
-                  style={{ 
-                    backgroundColor: `${task.categoryId.color}20`, // 20% opacity
-                    color: task.categoryId.color 
-                  }}
-                >
-                  {task.categoryId.name}
-                </div>
-              )}
+      <div 
+        className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
+        style={{ 
+          backgroundColor: isCategory(task.categoryId) ? `${task.categoryId.color}20` : "#6366F120", 
+          color: isCategory(task.categoryId) ? task.categoryId.color : "#6366F1"
+        }}
+      >
+        {isCategory(task.categoryId) ? task.categoryId.name : 'Category'}
+      </div>
+    )}
             </div>
           </div>
         </div>

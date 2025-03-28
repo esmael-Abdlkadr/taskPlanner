@@ -1,6 +1,5 @@
-import { cn } from "../../../lib/utils"; 
-
-type TaskStatus = "not-started" | "in-progress" | "completed" | "archived";
+import { cn } from "../../../lib/utils";
+import { TaskStatus } from "../../../types/task.types"; 
 
 interface TaskStatusBadgeProps {
   status: TaskStatus;
@@ -9,15 +8,14 @@ interface TaskStatusBadgeProps {
 }
 
 const TaskStatusBadge = ({ status, size = "md", className }: TaskStatusBadgeProps) => {
-  // Define styling based on status
   const getStatusConfig = () => {
     switch (status) {
-      case "not-started":
+      case "todo":
         return {
           color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
           label: "Not Started",
         };
-      case "in-progress":
+      case "in_progress":
         return {
           color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
           label: "In Progress",

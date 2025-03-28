@@ -1,5 +1,5 @@
-import express from 'express';
-import { 
+import express from "express";
+import {
   getWorkspaces,
   getWorkspace,
   createWorkspace,
@@ -8,9 +8,10 @@ import {
   getWorkspaceMembers,
   addWorkspaceMember,
   updateWorkspaceMemberRole,
-  removeWorkspaceMember
-} from '../controllers/workspaceController';
-import { protect, checkWorkspaceMember } from '../middleware/authMiddleware';
+  removeWorkspaceMember,
+  restoreWorkspace,
+} from "../controllers/workspaceController";
+import { protect, checkWorkspaceMember } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
@@ -28,7 +29,7 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
-router.get('/', protect, getWorkspaces);
+router.get("/", protect, getWorkspaces);
 
 /**
  * @swagger
@@ -70,7 +71,7 @@ router.get('/', protect, getWorkspaces);
  *       401:
  *         description: Unauthorized
  */
-router.post('/', protect, createWorkspace);
+router.post("/", protect, createWorkspace);
 
 /**
  * @swagger
@@ -94,7 +95,7 @@ router.post('/', protect, createWorkspace);
  *       404:
  *         description: Workspace not found
  */
-router.get('/:id', protect, getWorkspace);
+router.get("/:id", protect, getWorkspace);
 
 /**
  * @swagger
@@ -149,7 +150,7 @@ router.get('/:id', protect, getWorkspace);
  *       404:
  *         description: Workspace not found
  */
-router.patch('/:id', protect, updateWorkspace);
+router.patch("/:id", protect, updateWorkspace);
 
 /**
  * @swagger
@@ -175,7 +176,7 @@ router.patch('/:id', protect, updateWorkspace);
  *       404:
  *         description: Workspace not found
  */
-router.post('/:id/archive', protect, archiveWorkspace);
+router.post("/:id/archive", protect, archiveWorkspace);
 
 /**
  * @swagger
@@ -199,7 +200,7 @@ router.post('/:id/archive', protect, archiveWorkspace);
  *       404:
  *         description: Workspace not found
  */
-router.get('/:id/members', protect, checkWorkspaceMember, getWorkspaceMembers);
+router.get("/:id/members", protect, getWorkspaceMembers);
 
 /**
  * @swagger
@@ -241,7 +242,7 @@ router.get('/:id/members', protect, checkWorkspaceMember, getWorkspaceMembers);
  *       404:
  *         description: Workspace or user not found
  */
-router.post('/:id/members', protect, checkWorkspaceMember, addWorkspaceMember);
+router.post("/:id/members", protect, addWorkspaceMember);
 
 /**
  * @swagger
@@ -282,7 +283,11 @@ router.post('/:id/members', protect, checkWorkspaceMember, addWorkspaceMember);
  *       404:
  *         description: Workspace or member not found
  */
-router.patch('/:workspaceId/members/:memberId', protect, updateWorkspaceMemberRole);
+router.patch(
+  "/:workspaceId/members/:memberId",
+  protect,
+  updateWorkspaceMemberRole
+);
 
 /**
  * @swagger
@@ -311,6 +316,33 @@ router.patch('/:workspaceId/members/:memberId', protect, updateWorkspaceMemberRo
  *       404:
  *         description: Workspace or member not found
  */
-router.delete('/:workspaceId/members/:memberId', protect, removeWorkspaceMember);
+router.delete(
+  "/:workspaceId/members/:memberId",
+  protect,
+  removeWorkspaceMember
+);
+/**
+ * @swagger
+ * /api/workspaces/{id}/restore:
+ *   post:
+ *     summary: Restore a workspace
+ *     tags: [Workspaces]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Workspace restored successfully
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Workspace not found
+ */
+router.post("/:id/restore", protect, restoreWorkspace);
 
 export default router;

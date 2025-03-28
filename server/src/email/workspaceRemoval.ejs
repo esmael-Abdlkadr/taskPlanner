@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <title>Workspace Removal Notification</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type="text/css">
+      /* Your existing styles */
+      body {
+        font-family: "Source Sans Pro", Helvetica, Arial, sans-serif;
+        background-color: #f6f9fc;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #ffffff;
+        border-top: 3px solid #4f46e5;
+        border-radius: 6px;
+      }
+      .header {
+        padding: 20px 0;
+        text-align: center;
+      }
+      .content {
+        padding: 20px;
+        line-height: 1.5;
+      }
+      .button {
+        display: inline-block;
+        padding: 14px 30px;
+        background-color: #4f46e5;
+        color: #ffffff !important;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+        margin: 20px 0;
+      }
+      .footer {
+        padding: 20px;
+        text-align: center;
+        color: #666;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div
+          style="
+            display: inline-block;
+            width: 48px;
+            height: 48px;
+            background-color: #4f46e5;
+            color: white;
+            font-weight: bold;
+            border-radius: 8px;
+            text-align: center;
+            line-height: 48px;
+          "
+        >
+          TN
+        </div>
+      </div>
+
+      <div class="content">
+        <h1>Workspace Access Update</h1>
+        <p>Hi <%= userName %>,</p>
+        <p>
+          This is to inform you that your access to the workspace
+          <strong><%= workspaceName %></strong> has been removed.
+        </p>
+        <p>
+          If you believe this was done in error, please contact the workspace
+          administrator.
+        </p>
+        <p>You can still access your other workspaces and tasks on TaskNest.</p>
+
+        <div style="text-align: center">
+          <a href="<%= appUrl %>" class="button">Go to TaskNest</a>
+        </div>
+
+        <p>Regards,<br />The TaskNest Team</p>
+      </div>
+
+      <div class="footer">
+        <p>This is an automated message. Please do not reply to this email.</p>
+      </div>
+    </div>
+  </body>
+</html>

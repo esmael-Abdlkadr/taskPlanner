@@ -12,7 +12,7 @@ import { useTaskPath, useToggleFavorite } from "../../../hooks/useTask"
 import { Link } from "react-router-dom";
 import TaskStatusBadge from "./TaskStatusBadge";
 import TaskPriorityBadge from "./TaskPriotiyBadge";
-import { Avatar } from "../../../components/ui/avatar";
+import { Avatar } from "../../../components/common/Avatar";
 
 interface TaskCardProps {
   task: Task;
@@ -24,7 +24,6 @@ interface TaskCardProps {
 export const TaskCard = ({
   task,
   onClick,
-  showWorkspace = false,
   className,
 }: TaskCardProps) => {
   const { data: pathData } = useTaskPath(task._id);
@@ -75,7 +74,7 @@ export const TaskCard = ({
       to={`/tasks/${task._id}`}
       className={cn(
         "block p-4 rounded-lg border hover:border-primary transition-all",
-        task.status === TaskStatus.Completed && "bg-muted/50",
+        task.status === TaskStatus.DONE && "bg-muted/50",
         className
       )}
       onClick={(e) => {
@@ -112,11 +111,11 @@ export const TaskCard = ({
             </h3>
             
             {/* Parent path if it's a subtask */}
-            {pathData && pathData.path.length > 0 && (
+            {pathData && pathData.length > 0 && (
               <div className="flex items-center text-xs text-muted-foreground mt-1">
                 <span>
-                  {pathData.path[0].title} 
-                  {pathData.path.length > 1 && ` +${pathData.path.length - 1}`}
+                  {pathData[0]} 
+                  {pathData.length > 1 && ` +${pathData.length - 1}`}
                 </span>
                 <ChevronRight className="h-3 w-3 mx-1" />
               </div>
@@ -132,12 +131,12 @@ export const TaskCard = ({
                 <div 
                   className={cn(
                     "flex items-center text-xs px-2 py-1 rounded-full",
-                    new Date(task.dueDate) < new Date() && task.status !== TaskStatus.Completed 
+                    new Date(task.dueDate) < new Date() && task.status !== TaskStatus.DONE 
                       ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
                       : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
                   )}
                 >
-                  {new Date(task.dueDate) < new Date() && task.status !== TaskStatus.Completed 
+                  {new Date(task.dueDate) < new Date() && task.status !== TaskStatus.DONE
                     ? <AlertCircle className="h-3 w-3 mr-1" />
                     : <Calendar className="h-3 w-3 mr-1" />
                   }
@@ -154,21 +153,21 @@ export const TaskCard = ({
             onClick={handleFavoriteClick}
             className={cn(
               "p-1 rounded-full transition-all",
-              task.favorites 
+              task.isFavorite 
                 ? "text-yellow-500 hover:text-yellow-600" 
                 : "text-muted-foreground opacity-0 hover:opacity-100 focus:opacity-100",
-              isHovered && !task.favorites && "opacity-50"
+              isHovered && !task.isFavorite && "opacity-50"
             )}
           >
             <Star className="h-5 w-5 fill-current" />
           </button>
           
           {/* Assignee avatar if available */}
-          {task.assignee && (
+          {task.assigneeId && (
             <div className="mt-auto pt-2">
               <Avatar 
-                src={task.assignee.avatar} 
-                name={`${task.assignee.firstName} ${task.assignee.lastName}`}
+                src={task.assigneeId.avatar} 
+                name={`${task.assigneeId.firstName} ${task.assigneeId.lastName}`}
                 size="sm"
                 className="mt-1"
               />

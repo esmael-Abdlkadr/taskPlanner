@@ -9,10 +9,12 @@ import { toast } from "react-hot-toast";
 import { useWorkspaceStore } from "../store/workspaceStore";
 
 // Get all user workspaces
-export const useWorkspaces = () => {
+export const useWorkspaces = (options?: { status?: 'active' | 'archived' | 'all' }) => {
+  const status = options?.status || 'active';
+  
   return useQuery({
-    queryKey: ["workspaces"],
-    queryFn: workspaceService.getWorkspaces,
+    queryKey: ["workspaces", { status }],
+    queryFn: () => workspaceService.getWorkspaces({ status }),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
@@ -45,8 +47,12 @@ export const useCreateWorkspace = () => {
       
       toast.success("Workspace created successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to create workspace");
+    onError: (error: unknown) => {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to create workspace");
+      }
     },
   });
 };
@@ -68,8 +74,12 @@ export const useUpdateWorkspace = () => {
       
       toast.success("Workspace updated successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to update workspace");
+    onError: (error: unknown) => {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to update workspace");
+      }
     },
   });
 };
@@ -82,7 +92,7 @@ export const useArchiveWorkspace = () => {
   return useMutation({
     mutationFn: (workspaceId: string) =>
       workspaceService.archiveWorkspace(workspaceId),
-    onSuccess: (_, workspaceId) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workspaces"] });
       
       // Get other workspaces to select a new active one if needed
@@ -95,8 +105,32 @@ export const useArchiveWorkspace = () => {
       
       toast.success("Workspace archived successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to archive workspace");
+    onError: (error: unknown) => {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to archive workspace");
+      }
+    },
+  });
+};
+
+export const useRestoreWorkspace = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (workspaceId: string) =>
+      workspaceService.restoreWorkspace(workspaceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+      toast.success("Workspace restored successfully");
+    },
+    onError: (error: unknown) => {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to restore workspace");
+      }
     },
   });
 };
@@ -127,8 +161,12 @@ export const useAddWorkspaceMember = (workspaceId: string) => {
       });
       toast.success("Member added successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to add member");
+    onError: (error: unknown) => {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to add member");
+      }
     },
   });
 };
@@ -146,8 +184,12 @@ export const useUpdateMemberRole = (workspaceId: string) => {
       });
       toast.success("Member role updated");
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to update role");
+    onError: (error: unknown) => {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to update role");
+      }
     },
   });
 };
@@ -165,8 +207,12 @@ export const useRemoveWorkspaceMember = (workspaceId: string) => {
       });
       toast.success("Member removed successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to remove member");
+    onError: (error: unknown) => {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to remove member");
+      }
     },
   });
 };

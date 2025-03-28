@@ -17,10 +17,10 @@ import {
 import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
 import Select from '../../components/ui/select';
-import { Avatar } from '@radix-ui/react-avatar';
+import { Avatar } from '../../components/common/Avatar';
 import { Dropdown } from '../../components/ui/dropdown'; 
-import { DeleteConfirmDialog } from '../../components/ui/deleteConfirmDialog'; 
-import { useForm } from 'react-hook-form';
+import { DeleteConfirmDialog } from '../../components/ui/DeleteConfirmDialog'; 
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -49,6 +49,7 @@ export const WorkspaceMembersTab = ({ workspaceId, userRole = 'member' }: Worksp
   
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting }
@@ -150,16 +151,16 @@ export const WorkspaceMembersTab = ({ workspaceId, userRole = 'member' }: Worksp
               <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                 <div className="flex items-center gap-3">
                   <Avatar 
-                    name={`${owner.firstName} ${owner.lastName}`}
-                    src={owner.avatar}
+                    name={`${owner.user?.firstName} ${owner.user?.lastName}`}
+                    src={owner?.user?.avatar}
                   />
                   
                   <div>
                     <p className="font-medium">
-                      {owner.firstName} {owner.lastName}
+                      {owner?.user?.firstName} {owner?.user?.lastName}
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {owner.email}
+                      {owner?.user?.email}
                     </p>
                   </div>
                 </div>
@@ -281,16 +282,22 @@ export const WorkspaceMembersTab = ({ workspaceId, userRole = 'member' }: Worksp
                   autoFocus
                 />
               </div>
-              
               <div>
                 <label className="block mb-1 font-medium">Role</label>
-                <Select
-                  options={[
-                    { value: 'member', label: 'Member (can view and edit)' },
-                    { value: 'admin', label: 'Admin (can manage workspace)' },
-                  ]}
-                  {...register('role')}
-                  error={errors.role?.message}
+                <Controller
+                  control={control}
+                  name="role"
+                  render={({ field }) => (
+                    <Select
+                      options={[
+                        { value: 'member', label: 'Member (can view and edit)' },
+                        { value: 'admin', label: 'Admin (can manage workspace)' },
+                      ]}
+                      value={field.value}
+                      onChange={field.onChange}
+                      error={errors.role?.message}
+                    />
+                  )}
                 />
               </div>
               

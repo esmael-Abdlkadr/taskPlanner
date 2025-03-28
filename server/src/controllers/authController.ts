@@ -4,7 +4,7 @@ import asyncHandler from "../utils/asyncHandler";
 import HttpError from "../utils/httpError";
 import { User } from "../models/User";
 import { Workspace } from "../models/Workspace";
-import { generateAccessToken, verifyToken } from "../utils/tokenUtil";
+import { generateAccessToken } from "../utils/tokenUtil";
 import { loginSchema, signupSchema } from "../validators/validatorSchema";
 import sendEmail from "../utils/sendEmail";
 import { generateCode } from "../utils/generator";
@@ -149,7 +149,9 @@ export const verifyOtp = asyncHandler(
 
       // Get user data without sensitive fields
       const userData = user.toObject();
-      delete userData.password;
+      if ("password" in userData) {
+        delete (userData as { password?: string }).password;
+      }
       delete userData.otp;
       delete userData.otpExpires;
 

@@ -1,12 +1,10 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ChevronRight, 
   ChevronDown, 
   Plus, 
   MoreHorizontal, 
-  Calendar,
   CheckCircle,
   Edit,
   Trash2,
@@ -18,19 +16,20 @@ import { Link } from "react-router-dom";
 import { format } from "date-fns";
 
 import Button from "../../../components/ui/button";
-import { Avatar } from "../../../components/ui/avatar";
+import { Avatar } from "../../../components/common/Avatar";
 import TaskStatusBadge from "../../../features/task/components/TaskStatusBadge";
 import TaskPriorityBadge from "../../../features/task/components/TaskPriotiyBadge";
 import { CreateTaskDialog } from "../../../features/task/components/CreateTask";
 import { useTask, useSubtasks, useUpdateTask } from "../../../hooks/useTask";
 import { EditTaskModal } from "./EditTasks";
 import { DeleteTaskModal } from "./DeleteModal";
+import { Task, TaskPriority, TaskStatus } from "../../../types/task.types";
 
 interface TaskTreeProps {
   taskId: string;
 }
 
-// Task node animation variants
+
 const nodeVariants = {
   hidden: {
     opacity: 0,
@@ -52,20 +51,20 @@ const nodeVariants = {
   }
 };
 
-// Task menu with quick actions
-const TaskMenu = ({ 
-  task,
+// Type definition for the TaskMenu props
+interface TaskMenuProps {
+  task: Task;
+  onAddSubtask: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+const TaskMenu: React.FC<TaskMenuProps> = ({ 
   onAddSubtask,
   onEdit,
   onDelete
-}: { 
-  task: any, 
-  onAddSubtask: () => void,
-  onEdit: () => void,
-  onDelete: () => void
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-
   const menuRef = useRef<HTMLDivElement>(null);
   
   // Close the menu when clicking outside
@@ -144,7 +143,6 @@ const TaskMenu = ({
   );
 };
 
-// Task progress indicator - shows % of completed subtasks
 const TaskProgress = ({ completedTasks, totalTasks }: { completedTasks: number, totalTasks: number }) => {
   const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   
@@ -193,24 +191,25 @@ const DueDate = ({ date, status }: { date: string, status: string }) => {
         )}
       </div>
     );
-  } catch (error) {
-    return null;
+  } catch {
+    return <div className="text-xs text-gray-400">Invalid date</div>;
   }
 };
 
-// The main task node component
-const TaskNode = ({ 
+interface TaskNodeProps {
+  task: Task;
+  isParent?: boolean;
+  level?: number;
+  isLastChild?: boolean;
+  refreshHierarchy: () => void;
+}
+
+const TaskNode: React.FC<TaskNodeProps> = ({ 
   task, 
   isParent = false,
   level = 0,
   isLastChild = false,
   refreshHierarchy,
-}: { 
-  task: any, 
-  isParent?: boolean,
-  level?: number,
-  isLastChild?: boolean,
-  refreshHierarchy: () => void,
 }) => {
   const [expanded, setExpanded] = useState(true);
   const [addingSubtask, setAddingSubtask] = useState(false);
@@ -218,10 +217,11 @@ const TaskNode = ({
   const [editTaskOpen, setEditTaskOpen] = useState(false);
   const [deleteTaskOpen, setDeleteTaskOpen] = useState(false);
   const { data: subtasksData, isLoading, refetch } = useSubtasks(task._id);
-  const updateTask = useUpdateTask(task._id);;
+  const updateTask = useUpdateTask(task._id);
   
   // Extract subtasks from the response and compute stats
   const subtasks = Array.isArray(subtasksData) ? subtasksData : (subtasksData?.data || []);
+
   const hasChildren = subtasks.length > 0;
   const completedSubtasks = subtasks.filter(t => t.status === "completed").length;
   
@@ -249,7 +249,7 @@ const TaskNode = ({
   const statusColor = getStatusColor(task.status);
   
   // Handle quick status update
-  const handleStatusChange = (newStatus: string) => {
+  const handleStatusChange = (newStatus: TaskStatus) => {
     updateTask.mutate(
       { status: newStatus },
       {
@@ -287,6 +287,23 @@ const TaskNode = ({
     }
   };
   
+  // Safe access to assignee properties
+  const getAssigneeName = () => {
+    if (!task.assigneeId) return null;
+    
+    if (typeof task.assigneeId === 'object') {
+      return {
+        firstName: task.assigneeId.firstName || 'Unknown',
+        lastName: task.assigneeId.lastName || '',
+        avatar: task.assigneeId.avatar || ''
+      };
+    }
+    
+    return null;
+  };
+  
+  const assignee = getAssigneeName();
+
   return (
     <motion.div 
       className={`relative ${level > 0 ? "ml-8 pl-0" : ""}`}
@@ -300,7 +317,7 @@ const TaskNode = ({
         <>
           {/* Vertical line */}
           <div 
-            className={`absolute left-0 top-0 h-full w-0 -ml-4 ${
+            className={`absolute left-0 top-0 w-0 -ml-4 ${
               isLastChild ? "h-[22px]" : "h-full"
             } ${statusColor}`}
             style={{ borderLeftWidth: "2px" }}
@@ -368,7 +385,7 @@ const TaskNode = ({
                 <div className="flex items-center">
                   {task.status !== "completed" ? (
                     <button 
-                      onClick={() => handleStatusChange("completed")}
+                      onClick={() => handleStatusChange("completed" as TaskStatus)}
                       className="p-1.5 rounded-full hover:bg-green-100 hover:text-green-600 text-gray-400 dark:hover:bg-green-900/30"
                       title="Mark as completed"
                     >
@@ -376,7 +393,7 @@ const TaskNode = ({
                     </button>
                   ) : (
                     <button 
-                      onClick={() => handleStatusChange("todo")}
+                      onClick={() => handleStatusChange("todo" as TaskStatus)}
                       className="p-1.5 rounded-full hover:bg-gray-100 text-green-500 dark:hover:bg-gray-800"
                       title="Mark as incomplete"
                     >
@@ -387,18 +404,18 @@ const TaskNode = ({
                 
                 {/* Actions menu */}
                 <TaskMenu 
-  task={task} 
-  onAddSubtask={() => setAddingSubtask(true)}
-  onEdit={() => setEditTaskOpen(true)}
-  onDelete={() => setDeleteTaskOpen(true)}
-/>
+                  task={task} 
+                  onAddSubtask={() => setAddingSubtask(true)}
+                  onEdit={() => setEditTaskOpen(true)}
+                  onDelete={() => setDeleteTaskOpen(true)}
+                />
               </div>
             </div>
             
             {/* Task metadata */}
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              <TaskStatusBadge status={task.status} size="sm" />
-              <TaskPriorityBadge priority={task.priority} size="sm" />
+              <TaskStatusBadge status={task.status as TaskStatus} size="sm" />
+              <TaskPriorityBadge priority={task.priority as TaskPriority} size="sm" />
               
               {/* Task depth indicator */}
               <span className="inline-flex items-center text-xs px-2 py-1 rounded-full bg-white/70 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
@@ -406,15 +423,15 @@ const TaskNode = ({
               </span>
               
               {/* Assignee */}
-              {task.assigneeId && (
+              {assignee && (
                 <div className="flex items-center gap-1 ml-auto">
                   <Avatar 
-                    src={task.assigneeId.avatar}
-                    name={`${task.assigneeId.firstName} ${task.assigneeId.lastName}`}
-                    size="xs"
+                    src={assignee.avatar}
+                    name={`${assignee.firstName} ${assignee.lastName}`}
+                    size="sm"
                   />
                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {task.assigneeId.firstName}
+                    {assignee.firstName}
                   </span>
                 </div>
               )}
@@ -488,7 +505,7 @@ const TaskNode = ({
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
           >
-            {subtasks.map((subtask: any, index: number) => (
+            {subtasks.map((subtask: Task, index: number) => (
               <TaskNode 
                 key={subtask._id}
                 task={subtask}
@@ -506,36 +523,35 @@ const TaskNode = ({
         open={addingSubtask}
         onOpenChange={setAddingSubtask}
         parentTaskId={task._id}
-        defaultWorkspaceId={task.workspaceId}
+        defaultWorkspaceId={typeof task.workspaceId === 'object' ? (task.workspaceId as { _id: string })._id : task.workspaceId}
         onSuccess={handleSubtaskAdded}
       />
 
-<EditTaskModal
-  open={editTaskOpen}
-  onOpenChange={setEditTaskOpen}
-  taskId={task._id}
-  onSuccess={() => {
-    refetch();
-    refreshHierarchy();
-  }}
-/>
+      <EditTaskModal
+        open={editTaskOpen}
+        onOpenChange={setEditTaskOpen}
+        taskId={task._id}
+        onSuccess={() => {
+          refetch();
+          refreshHierarchy();
+        }}
+      />
 
-{/* Delete task modal */}
-<DeleteTaskModal
-  open={deleteTaskOpen}
-  onOpenChange={setDeleteTaskOpen}
-  taskId={task._id}
-  onSuccess={() => {
-    refreshHierarchy();
-  }}
-/>
+      {/* Delete task modal */}
+      <DeleteTaskModal
+        open={deleteTaskOpen}
+        onOpenChange={setDeleteTaskOpen}
+        taskId={task._id}
+        onSuccess={() => {
+          refreshHierarchy();
+        }}
+      />
     </motion.div>
   );
 };
 
-// The main task tree component
 export const TaskTree = ({ taskId }: TaskTreeProps) => {
-  const { data: taskData, isLoading, refetch } = useTask(taskId);
+  const { data, isLoading, refetch } = useTask(taskId);
   
   if (isLoading) {
     return (
@@ -550,8 +566,8 @@ export const TaskTree = ({ taskId }: TaskTreeProps) => {
     );
   }
   
-  // Extract task data properly
-  const task = taskData?.task || taskData;
+  // Extract task with simplified approach
+  const task = data?.task;
   
   if (!task) {
     return null;

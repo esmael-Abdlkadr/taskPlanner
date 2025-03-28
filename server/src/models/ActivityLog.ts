@@ -20,22 +20,25 @@ const activityLogSchema = new Schema<IActivityLog>(
     action: {
       type: String,
       enum: [
-        "create", 
-        "update", 
-        "delete", 
-        "complete", 
-        "reopen", 
-        "move", 
-        "assign", 
-        "comment", 
-        "add_tag", 
+        "create",
+        "update",
+        "delete",
+        "complete",
+        "reopen",
+        "move",
+        "assign",
+        "comment",
+        "add_tag",
         "remove_tag",
         "join",
         "leave",
-        "favorite",   
-        "unfavorite"   
-        
+        "favorite",
+        "unfavorite",
+        "add_member", 
+        "remove_member", 
+        "update_member", 
       ],
+
       required: true,
     },
     details: {
@@ -52,4 +55,7 @@ activityLogSchema.index({ entityId: 1, entityType: 1 });
 activityLogSchema.index({ userId: 1 });
 activityLogSchema.index({ createdAt: -1 });
 
-export const ActivityLog = model<IActivityLog>("ActivityLog", activityLogSchema);
+export const ActivityLog = model<IActivityLog>(
+  "ActivityLog",
+  activityLogSchema
+);
