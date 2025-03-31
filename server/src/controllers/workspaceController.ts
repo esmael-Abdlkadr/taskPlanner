@@ -109,31 +109,36 @@ export const getWorkspace = asyncHandler(
     }
 
     try {
-      // Check access to workspace
-      const workspace = await Workspace.findOne({
-        _id: id,
-        $or: [
-          { ownerId: userId },
-          // Would need to implement workspace membership check here
-        ],
-      });
+      // First just find the workspace by ID
+      const workspace = await Workspace.findById(id);
 
       if (!workspace) {
-        return next(new HttpError("Workspace not found or access denied", 404));
+        return next(new HttpError("Workspace not found", 404));
       }
 
-      // Determine user's role in this workspace
-      let role = "member";
+      // Determine user's access level
+      let role = null;
+      let hasAccess = false;
+
+      // Check if user is owner
       if (String(workspace.ownerId) === String(userId)) {
         role = "owner";
+        hasAccess = true;
       } else {
+        // Check if user is a member
         const membership = await WorkspaceMember.findOne({
           workspaceId: workspace._id,
           userId,
         });
+
         if (membership) {
           role = membership.role;
+          hasAccess = true;
         }
+      }
+
+      if (!hasAccess) {
+        return next(new HttpError("Access denied to this workspace", 403));
       }
 
       // Get workspace statistics
@@ -473,17 +478,26 @@ export const getWorkspaceMembers = asyncHandler(
     }
 
     try {
-      // Check access to workspace
-      const workspace = await Workspace.findOne({
-        _id: id,
-        $or: [
-          { ownerId: userId },
-          // Would need to implement workspace membership check here
-        ],
-      });
+      // First find the workspace
+      const workspace = await Workspace.findById(id);
 
       if (!workspace) {
-        return next(new HttpError("Workspace not found or access denied", 404));
+        return next(new HttpError("Workspace not found", 404));
+      }
+
+      // Check if user is owner
+      const isOwner = String(workspace.ownerId) === String(userId);
+
+      // If not owner, check if user is a member
+      if (!isOwner) {
+        const membership = await WorkspaceMember.findOne({
+          workspaceId: id,
+          userId,
+        });
+
+        if (!membership) {
+          return next(new HttpError("Access denied to this workspace", 403));
+        }
       }
 
       // Get owner info
@@ -765,25 +779,35 @@ export const removeWorkspaceMember = asyncHandler(
     }
 
     try {
-      // Check if workspace exists and user is owner or admin
-      const workspace = await Workspace.findOne({
-        _id: workspaceId,
-        $or: [
-          { ownerId: userId },
-          // Would need to check if user is admin
-        ],
-      });
+      // Check if workspace exists
+      const workspace = await Workspace.findById(workspaceId);
 
       if (!workspace) {
+        return next(new HttpError("Workspace not found", 404));
+      }
+
+      // Check if user has permission to remove members
+      const isOwner = String(workspace.ownerId) === String(userId);
+      let hasPermission = isOwner;
+
+      if (!isOwner) {
+        // Check if user is an admin member
+        const userMembership = await WorkspaceMember.findOne({
+          workspaceId,
+          userId,
+          role: "admin",
+        });
+
+        hasPermission = !!userMembership;
+      }
+
+      if (!hasPermission) {
         return next(
-          new HttpError(
-            "Workspace not found or you don't have permission to remove members",
-            404
-          )
+          new HttpError("You don't have permission to remove members", 403)
         );
       }
 
-      // Find the membership
+      // Find the membership to be removed
       const member = await WorkspaceMember.findById(memberId).populate(
         "userId",
         "email"
@@ -796,7 +820,7 @@ export const removeWorkspaceMember = asyncHandler(
       // Store data for activity log before deletion
       const memberEmail = (member.userId as any).email;
 
-      // Inside your removeWorkspaceMember function, after storing memberEmail:
+      // Send email notification
       try {
         const removedUser = await User.findOne({ email: memberEmail });
         if (removedUser) {

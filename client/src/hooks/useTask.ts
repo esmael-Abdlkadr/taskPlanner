@@ -8,6 +8,7 @@ import {
   TaskFilter,
 } from "../types/task.types";
 import { toast } from "react-hot-toast";
+import { commentService } from "../services/comment";
 
 export const useWorkspaceTasks = (
   workspaceId: string | undefined,
@@ -17,14 +18,13 @@ export const useWorkspaceTasks = (
   return useQuery({
     queryKey: ["workspace-tasks", workspaceId, filter],
     queryFn: () => {
-      // Double-check that workspaceId is valid before making the API call
       if (!workspaceId) {
         throw new Error("Workspace ID is required");
       }
       return taskService.getWorkspaceTasks(workspaceId, filter);
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: !!workspaceId && options.enabled !== false, // Only run when we have a workspaceId
+    staleTime: 5 * 60 * 1000,
+    enabled: !!workspaceId && options.enabled !== false,
   });
 };
 
@@ -33,7 +33,7 @@ export const useTask = (taskId: string) => {
     queryKey: ["task", taskId],
     queryFn: () => taskService.getTaskById(taskId),
     enabled: !!taskId,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 2 * 60 * 1000,
   });
 };
 
@@ -42,7 +42,7 @@ export const useSubtasks = (parentId: string) => {
     queryKey: ["subtasks", parentId],
     queryFn: () => taskService.getSubtasks(parentId),
     enabled: !!parentId,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 2 * 60 * 1000,
   });
 };
 
@@ -79,14 +79,10 @@ export const useUpdateTask = (taskId: string) => {
     mutationFn: (taskData: UpdateTaskDto) =>
       taskService.updateTask(taskId, taskData),
     onSuccess: (variables) => {
-      // Update the task in the cache
       queryClient.invalidateQueries({ queryKey: ["task", taskId] });
 
-      // Get the current task data to check if parentId changed
       const task = queryClient.getQueryData<{ task: Task }>(["task", taskId]);
 
-      // If workspaceId is provided or we know the task's workspace,
-      // invalidate workspace tasks
       if (variables.workspaceId || task?.task?.workspaceId) {
         queryClient.invalidateQueries({
           queryKey: [
@@ -197,7 +193,6 @@ export const useToggleTaskCompletion = () => {
   });
 };
 
-// Helper hooks that use the toggle hook internally
 export const useCompleteTask = () => {
   const toggleMutation = useToggleTaskCompletion();
 
@@ -336,7 +331,6 @@ export const useToggleFavorite = () => {
   });
 };
 
-// Get favorite tasks
 export const useFavoriteTasks = (workspaceId: string) => {
   return useWorkspaceTasks(
     workspaceId,
@@ -353,7 +347,7 @@ export function useAllTasks(filters?: any) {
 
   useEffect(() => {
     let isMounted = true;
-    
+
     async function fetchData() {
       setIsLoading(true);
       try {
@@ -361,11 +355,11 @@ export function useAllTasks(filters?: any) {
         const queryFilters = {
           ...filters,
           page: filters?.page || 1,
-          limit: filters?.limit || 50
+          limit: filters?.limit || 50,
         };
-         console.log("Query filters:", queryFilters);
+        console.log("Query filters:", queryFilters);
         const response = await taskService.getAllTasks(queryFilters);
-        
+
         if (isMounted) {
           if (response && response.data) {
             setTasks(Array.isArray(response.data) ? response.data : []);
@@ -379,7 +373,11 @@ export function useAllTasks(filters?: any) {
       } catch (err) {
         console.error("Error in useAllTasks:", err);
         if (isMounted) {
-          setError(err instanceof Error ? err : new Error('Unknown error fetching tasks'));
+          setError(
+            err instanceof Error
+              ? err
+              : new Error("Unknown error fetching tasks")
+          );
           setTasks([]);
         }
       } finally {
@@ -388,18 +386,26 @@ export function useAllTasks(filters?: any) {
         }
       }
     }
-    
+
     fetchData();
-    
+
     return () => {
       isMounted = false;
     };
   }, [filters]);
 
-  return { 
+  return {
     data: tasks,
     pagination,
-    isLoading, 
-    error 
+    isLoading,
+    error,
   };
 }
+
+export const useTaskComments = (taskId: string) => {
+  return useQuery<Comment[]>({
+    queryKey: ["comments", taskId],
+    queryFn: () => taskService.getTaskComments(taskId),
+    enabled: !!taskId,
+  });
+};

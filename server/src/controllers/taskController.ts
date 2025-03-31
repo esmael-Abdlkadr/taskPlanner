@@ -10,6 +10,7 @@ import {
 import { Workspace } from "../models/Workspace";
 import { ActivityLog } from "../models/ActivityLog";
 import notificationService from "../service/notificationService";
+import { WorkspaceMember } from "../models/workSpaceMember";
 
 /**
  * Get tasks for a workspace (root level only by default)
@@ -67,22 +68,34 @@ export const getTasks = asyncHandler(
       };
     }
 
-
     if (search) {
       conditions.$or = [
         { title: { $regex: search, $options: "i" } },
         { description: { $regex: search, $options: "i" } },
       ];
     }
-
-    // Check workspace access
-    const workspace = await Workspace.findOne({
-      _id: workspaceId,
-      $or: [{ ownerId: userId }],
-    });
+    const workspace = await Workspace.findById(workspaceId);
 
     if (!workspace) {
-      return next(new HttpError("Workspace not found or access denied", 404));
+      return next(new HttpError("Workspace not found", 404));
+    }
+
+    // Check if user is owner or member
+    const isOwner =
+      (workspace.ownerId as string).toString() === userId.toString();
+
+    if (!isOwner) {
+      // Check if user is a member
+      const isMember = await WorkspaceMember.findOne({
+        workspaceId,
+        userId,
+      });
+
+      if (!isMember) {
+        return next(
+          new HttpError("Access denied: Not a member of this workspace", 403)
+        );
+      }
     }
 
     // Get sort settings from workspace
@@ -104,6 +117,7 @@ export const getTasks = asyncHandler(
         .limit(limit)
         .populate("assigneeId", "firstName lastName avatar")
         .lean();
+      console.log("tasks", tasks);
 
       // Count total for pagination
       const total = await Task.countDocuments(conditions);
@@ -130,102 +144,97 @@ export const getTasks = asyncHandler(
 /**
  * Get all tasks for the current user across all workspaces
  */
-export const getAllTasks = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const userId = req.user?._id;
-    
-    // Query parameters
-    const { 
-      status, 
-      priority, 
-      dueDate,
-      search,
-      sort = "updatedAt",
-      order = "desc",
-      page = 1,
-      limit = 50,
-      workspace
-    } = req.query;
+export const getAllTasks = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?._id;
 
-    console.log("req.query", req.query);
+      // Query parameters
+      const {
+        status,
+        priority,
+        dueDate,
+        search,
+        sort = "updatedAt",
+        order = "desc",
+        page = 1,
+        limit = 50,
+        workspace,
+      } = req.query;
 
+      console.log("req.query", req.query);
 
-    
-    // Build filter conditions
-    const filter: any = { 
-      $or: [
-        { ownerId: userId },
-        { assigneeId: userId }
-      ]
-    };
-    
-    // Apply optional filters
-    if (status) filter.status = status;
-    if (priority) filter.priority = priority;
-    if (workspace) filter.workspaceId = workspace;
-    
-    // Due date filters
-    if (dueDate) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (dueDate === 'today') {
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        filter.dueDate = { $gte: today, $lt: tomorrow };
-      } 
-      else if (dueDate === 'overdue') {
-        filter.dueDate = { $lt: today };
-        filter.status = { $ne: 'completed' };
+      // Build filter conditions
+      const filter: any = {
+        $or: [{ ownerId: userId }, { assigneeId: userId }],
+      };
+
+      // Apply optional filters
+      if (status) filter.status = status;
+      if (priority) filter.priority = priority;
+      if (workspace) filter.workspaceId = workspace;
+
+      // Due date filters
+      if (dueDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (dueDate === "today") {
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          filter.dueDate = { $gte: today, $lt: tomorrow };
+        } else if (dueDate === "overdue") {
+          filter.dueDate = { $lt: today };
+          filter.status = { $ne: "completed" };
+        } else if (dueDate === "upcoming") {
+          const nextWeek = new Date(today);
+          nextWeek.setDate(nextWeek.getDate() + 7);
+          filter.dueDate = { $gt: today, $lte: nextWeek };
+        }
       }
-      else if (dueDate === 'upcoming') {
-        const nextWeek = new Date(today);
-        nextWeek.setDate(nextWeek.getDate() + 7);
-        filter.dueDate = { $gt: today, $lte: nextWeek };
+
+      // Search filter
+      if (search) {
+        filter.$or = [
+          { title: { $regex: search, $options: "i" } },
+          { description: { $regex: search, $options: "i" } },
+        ];
       }
-    }
-    
-    // Search filter
-    if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
-      ];
-    }
-    
-    // Calculate pagination
-    const skip = (Number(page) - 1) * Number(limit);
-    
-    // Create sort options
-    const sortOptions: any = {};
-    sortOptions[sort as string] = order === 'asc' ? 1 : -1;
-    
-    // Query tasks with population of related data
-    const tasks = await Task.find(filter)
-      .populate('workspaceId', 'name color isPersonal')
-      .populate('assigneeId', 'firstName lastName avatar')
-      .populate('categoryId', 'name color icon')
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(Number(limit));
-    
-    // Get total count for pagination
-    const total = await Task.countDocuments(filter);
+
+      // Calculate pagination
+      const skip = (Number(page) - 1) * Number(limit);
+
+      // Create sort options
+      const sortOptions: any = {};
+      sortOptions[sort as string] = order === "asc" ? 1 : -1;
+
+      // Query tasks with population of related data
+      const tasks = await Task.find(filter)
+        .populate("workspaceId", "name color isPersonal")
+        .populate("assigneeId", "firstName lastName avatar")
+        .populate("categoryId", "name color icon")
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(Number(limit));
+
+      // Get total count for pagination
+      const total = await Task.countDocuments(filter);
       console.log("data", tasks);
-    return res.status(200).json({
-      status: 'success',
-      data: tasks,
-      pagination: {
-        total,
-        page: Number(page),
-        limit: Number(limit),
-        pages: Math.ceil(total / Number(limit))
-      }
-    });
-  } catch (error) {
-    return next(error);
+      return res.status(200).json({
+        status: "success",
+        data: tasks,
+        pagination: {
+          total,
+          page: Number(page),
+          limit: Number(limit),
+          pages: Math.ceil(total / Number(limit)),
+        },
+      });
+    } catch (error) {
+      return next(error);
+    }
   }
-});
+);
 
 /**
  * Get a specific task with its subtasks
@@ -261,18 +270,28 @@ export const getTask = asyncHandler(
       if (!task) {
         return next(new HttpError("Task not found", 404));
       }
-
-      // Check workspace access
-      const workspace = await Workspace.findOne({
-        _id: task.workspaceId,
-        $or: [
-          { ownerId: userId },
-          // Would add a check for workspace members here
-        ],
-      });
+      const workspace = await Workspace.findById(task.workspaceId);
 
       if (!workspace) {
-        return next(new HttpError("Access denied", 403));
+        return next(new HttpError("Workspace not found", 404));
+      }
+
+      // Check if user is owner or member
+      const isOwner =
+        (workspace.ownerId as string).toString() === userId.toString();
+
+      if (!isOwner) {
+        // Check if user is a member
+        const isMember = await WorkspaceMember.findOne({
+          workspaceId: task.workspaceId,
+          userId,
+        });
+
+        if (!isMember) {
+          return next(
+            new HttpError("Access denied: Not a member of this workspace", 403)
+          );
+        }
       }
 
       // Get parent task details if exists
@@ -313,7 +332,6 @@ export const createTask = asyncHandler(
       return next(new HttpError("Authentication required", 401));
     }
 
-
     const {
       title,
       description,
@@ -329,17 +347,28 @@ export const createTask = asyncHandler(
     } = parsedResult.data;
 
     try {
-      // Check workspace access
-      const workspace = await Workspace.findOne({
-        _id: workspaceId,
-        $or: [
-          { ownerId: userId },
-          // Would add a check for workspace members here
-        ],
-      });
+      const workspace = await Workspace.findById(workspaceId);
 
       if (!workspace) {
-        return next(new HttpError("Workspace not found or access denied", 404));
+        return next(new HttpError("Workspace not found", 404));
+      }
+
+      // Check if user is owner or member
+      const isOwner =
+        (workspace.ownerId as string).toString() === userId.toString();
+
+      if (!isOwner) {
+        // Check if user is a member
+        const isMember = await WorkspaceMember.findOne({
+          workspaceId,
+          userId,
+        });
+
+        if (!isMember) {
+          return next(
+            new HttpError("Access denied: Not a member of this workspace", 403)
+          );
+        }
       }
 
       // Check if parent task exists and is in the same workspace
@@ -391,7 +420,6 @@ export const createTask = asyncHandler(
         details: { title: task.title },
       });
 
-      // Return the new task with assignee info
       const populatedTask = await Task.findById(task._id).populate(
         "assigneeId",
         "firstName lastName avatar"
@@ -429,17 +457,28 @@ export const toggleFavorite = asyncHandler(
         return next(new HttpError("Task not found", 404));
       }
 
-      // Check workspace access
-      const workspace = await Workspace.findOne({
-        _id: task.workspaceId,
-        $or: [
-          { ownerId: userId },
-          // Would add a check for workspace members here
-        ],
-      });
+      const workspace = await Workspace.findById(task.workspaceId);
 
       if (!workspace) {
-        return next(new HttpError("Access denied", 403));
+        return next(new HttpError("Workspace not found", 404));
+      }
+
+      // Check if user is owner or member
+      const isOwner =
+        (workspace.ownerId as string).toString() === userId.toString();
+
+      if (!isOwner) {
+        // Check if user is a member
+        const isMember = await WorkspaceMember.findOne({
+          workspaceId: task.workspaceId,
+          userId,
+        });
+
+        if (!isMember) {
+          return next(
+            new HttpError("Access denied: Not a member of this workspace", 403)
+          );
+        }
       }
 
       // Toggle favorite status
@@ -453,7 +492,6 @@ export const toggleFavorite = asyncHandler(
         .populate("assigneeId", "firstName lastName avatar")
         .populate("categoryId", "name icon color");
 
-      // Log activity
       await ActivityLog.create({
         entityId: task._id,
         entityType: "task",
@@ -488,30 +526,40 @@ export const updateTask = asyncHandler(
     }
 
     const userId = req.user?._id;
-    const user = req.user; // We need this for notification sender info
+    const user = req.user;
 
     if (!userId || !user) {
       return next(new HttpError("Authentication required", 401));
     }
 
     try {
-      // Get the existing task
       const task = await Task.findById(id);
       if (!task) {
         return next(new HttpError("Task not found", 404));
       }
 
-      // Check workspace access
-      const workspace = await Workspace.findOne({
-        _id: task.workspaceId,
-        $or: [
-          { ownerId: userId },
-          // Would add a check for workspace members here
-        ],
-      });
+      const workspace = await Workspace.findById(task.workspaceId);
 
       if (!workspace) {
-        return next(new HttpError("Access denied", 403));
+        return next(new HttpError("Workspace not found", 404));
+      }
+
+      // Check if user is owner or member
+      const isOwner =
+        (workspace.ownerId as string).toString() === userId.toString();
+
+      if (!isOwner) {
+        // Check if user is a member
+        const isMember = await WorkspaceMember.findOne({
+          workspaceId: task.workspaceId,
+          userId,
+        });
+
+        if (!isMember) {
+          return next(
+            new HttpError("Access denied: Not a member of this workspace", 403)
+          );
+        }
       }
 
       // Check for completion status change to track completion time
@@ -521,27 +569,22 @@ export const updateTask = asyncHandler(
       const isBeingReopened =
         parsedResult.data.status !== "completed" && task.status === "completed";
 
-      // Prepare update data
       const updateData: any = { ...parsedResult.data };
 
-      // Handle completion time
       if (isBeingCompleted) {
         updateData.completedAt = new Date();
       } else if (isBeingReopened) {
         updateData.completedAt = null;
       }
 
-      // Check if changing parent and it's valid
       if (
         updateData.parentId &&
         updateData.parentId !== task.parentId?.toString()
       ) {
-        // Prevent circular references
         if (updateData.parentId === String(task._id)) {
           return next(new HttpError("A task cannot be its own parent", 400));
         }
 
-        // Check if new parent exists and is in same workspace
         const parentTask = await Task.findById(updateData.parentId);
         if (!parentTask) {
           return next(new HttpError("Parent task not found", 404));
@@ -553,7 +596,6 @@ export const updateTask = asyncHandler(
         }
       }
 
-      // Update the task
       const updatedTask = await Task.findByIdAndUpdate(id, updateData, {
         new: true,
         runValidators: true,
@@ -563,7 +605,6 @@ export const updateTask = asyncHandler(
         return next(new HttpError("Failed to update task", 500));
       }
 
-      // Log activity
       await ActivityLog.create({
         entityId: task._id,
         entityType: "task",
@@ -572,7 +613,6 @@ export const updateTask = asyncHandler(
         details: { title: task.title, changes: updateData },
       });
 
-      // Send notifications based on updates
       const authorName = `${user.firstName} ${user.lastName}`;
 
       // 1. Assignment Change Notification
@@ -627,7 +667,6 @@ export const updateTask = asyncHandler(
         String(task.ownerId) !==
           (task.assigneeId ? task.assigneeId.toString() : null)
       ) {
-        // This would notify the task owner if you want to implement that
         // Add status change notification logic here
       }
 
@@ -662,14 +701,29 @@ export const deleteTask = asyncHandler(
         return next(new HttpError("Task not found", 404));
       }
 
-      // Check workspace access
-      const workspace = await Workspace.findOne({
-        _id: task.workspaceId,
-        $or: [
-          { ownerId: userId },
-          // Would add a check for workspace members here
-        ],
-      });
+      const workspace = await Workspace.findById(task.workspaceId);
+
+      if (!workspace) {
+        return next(new HttpError("Workspace not found", 404));
+      }
+
+      // Check if user is owner or member
+      const isOwner =
+        (workspace.ownerId as string).toString() === userId.toString();
+
+      if (!isOwner) {
+        // Check if user is a member
+        const isMember = await WorkspaceMember.findOne({
+          workspaceId: task.workspaceId,
+          userId,
+        });
+
+        if (!isMember) {
+          return next(
+            new HttpError("Access denied: Not a member of this workspace", 403)
+          );
+        }
+      }
 
       if (!workspace) {
         return next(new HttpError("Access denied", 403));
@@ -740,17 +794,28 @@ export const moveTask = asyncHandler(
         return next(new HttpError("Task not found", 404));
       }
 
-      // Check workspace access
-      const workspace = await Workspace.findOne({
-        _id: task.workspaceId,
-        $or: [
-          { ownerId: userId },
-          // Would add a check for workspace members here
-        ],
-      });
+      const workspace = await Workspace.findById(workspaceId);
 
       if (!workspace) {
-        return next(new HttpError("Access denied", 403));
+        return next(new HttpError("Workspace not found", 404));
+      }
+
+      // Check if user is owner or member
+      const isOwner =
+        (workspace.ownerId as string).toString() === userId.toString();
+
+      if (!isOwner) {
+        // Check if user is a member
+        const isMember = await WorkspaceMember.findOne({
+          workspaceId,
+          userId,
+        });
+
+        if (!isMember) {
+          return next(
+            new HttpError("Access denied: Not a member of this workspace", 403)
+          );
+        }
       }
 
       // If moving to a different workspace
@@ -862,18 +927,28 @@ export const getTaskPath = asyncHandler(
       if (!task) {
         return next(new HttpError("Task not found", 404));
       }
-
-      // Check workspace access
-      const workspace = await Workspace.findOne({
-        _id: task.workspaceId,
-        $or: [
-          { ownerId: userId },
-          // Would add a check for workspace members here
-        ],
-      });
+      const workspace = await Workspace.findById(task.workspaceId);
 
       if (!workspace) {
-        return next(new HttpError("Access denied", 403));
+        return next(new HttpError("Workspace not found", 404));
+      }
+
+      // Check if user is owner or member
+      const isOwner =
+        (workspace.ownerId as string).toString() === userId.toString();
+
+      if (!isOwner) {
+        // Check if user is a member
+        const isMember = await WorkspaceMember.findOne({
+          workspaceId: task.workspaceId,
+          userId,
+        });
+
+        if (!isMember) {
+          return next(
+            new HttpError("Access denied: Not a member of this workspace", 403)
+          );
+        }
       }
 
       // Get all tasks in the path
@@ -897,9 +972,6 @@ export const getTaskPath = asyncHandler(
   }
 );
 
-/**
- * Complete or reopen a task
- */
 export const toggleTaskCompletion = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
@@ -921,20 +993,30 @@ export const toggleTaskCompletion = asyncHandler(
         return next(new HttpError("Task not found", 404));
       }
 
-      // Check workspace access
-      const workspace = await Workspace.findOne({
-        _id: task.workspaceId,
-        $or: [
-          { ownerId: userId },
-          // Would add a check for workspace members here
-        ],
-      });
+      const workspace = await Workspace.findById(task.workspaceId);
 
       if (!workspace) {
-        return next(new HttpError("Access denied", 403));
+        return next(new HttpError("Workspace not found", 404));
       }
 
-      // Update completion status
+      // Check if user is owner or member
+      const isOwner =
+        (workspace.ownerId as string).toString() === userId.toString();
+
+      if (!isOwner) {
+        // Check if user is a member
+        const isMember = await WorkspaceMember.findOne({
+          workspaceId: task.workspaceId,
+          userId,
+        });
+
+        if (!isMember) {
+          return next(
+            new HttpError("Access denied: Not a member of this workspace", 403)
+          );
+        }
+      }
+
       const status = completed ? "completed" : "in-progress";
       const completedAt = completed ? new Date() : null;
 

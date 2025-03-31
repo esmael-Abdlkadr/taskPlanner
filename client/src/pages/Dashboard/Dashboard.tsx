@@ -86,7 +86,7 @@ const Dashboard = () => {
     const total = allTasks.length;
     const completed = allTasks.filter((t: Task) => t.status === "completed").length;
     const inProgress = allTasks.filter(
-      (t: Task) => t.status === "in_progress"
+      (t: Task) => t.status === "in-progress"
     ).length;
     const overdue = allTasks.filter((t: Task) => {
       if (!t.dueDate) return false;

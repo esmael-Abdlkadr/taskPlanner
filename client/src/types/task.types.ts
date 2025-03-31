@@ -1,13 +1,13 @@
 export enum TaskStatus {
   TODO = "todo",
-  IN_PROGRESS = "in_progress",
+  IN_PROGRESS = "in-progress",
   DONE = "completed",
   ARCHIVED = "archived",
 }
 
 export enum TaskPriority {
-LOW = "low",
-IN_PROGRESS = "in-progress",
+  LOW = "low",
+  IN_PROGRESS = "in-progress",
   MEDIUM = "medium",
   HIGH = "high",
   URGENT = "urgent",
@@ -19,7 +19,6 @@ export interface Category {
   color: string;
   icon: string;
 }
-
 
 export interface TaskTag {
   _id: string;
@@ -122,7 +121,7 @@ export interface UpdateTaskDto {
   parentTaskId?: string | null;
   assigneeId?: string | null;
   tags?: string[];
-  categoryId?: string | null;  // Allow null values
+  categoryId?: string | null; // Allow null values
   isFavorite?: boolean;
 }
 
@@ -155,4 +154,17 @@ export interface TaskStats {
   totalTasks: number;
   completedTasks: number;
   completionRate: number;
+}
+
+export interface CommentPayload {
+  content: string;
+  taskId: string;
+  parentId?: string | null;
+  attachments?: Array<{
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+  }>;
+  mentions?: string[];
 }

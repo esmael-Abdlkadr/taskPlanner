@@ -117,7 +117,7 @@ const TaskList: React.FC<TaskListProps> = ({
                   <div className="h-5 w-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
                     <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                   </div>
-                ) : task.status === 'in_progress' ? (
+                ) : task.status === 'in-progress' ? (
                   <div className="h-5 w-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                     <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   </div>

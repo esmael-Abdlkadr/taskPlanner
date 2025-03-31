@@ -1,6 +1,5 @@
 import { Document, Types } from "mongoose";
 
-
 export interface IUser extends Document {
   firstName: string;
   lastName: string;
@@ -26,7 +25,7 @@ export interface IUser extends Document {
 export interface ITask extends Document {
   title: string;
   description?: string;
-  status: "todo" | "in-progress" | "completed" | "archived";
+  status: "todo" | "in_progress" | "completed" | "archived";
   priority: "low" | "medium" | "high" | "urgent";
   parentId: ITask["_id"] | null;
   path: ITask["_id"][];
@@ -120,11 +119,11 @@ export interface ITemplate extends Document {
 
 export interface ICategory extends Document {
   name: string;
-  icon: string; // Icon identifier or name
-  color: string; // HEX color code
+  icon: string;
+  color: string;
   description?: string;
-  isDefault: boolean; // Pre-defined vs user-created
-  ownerId: Types.ObjectId; // Who created this category (null for pre-defined)
+  isDefault: boolean;
+  ownerId: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -43,10 +43,10 @@ export const taskService = {
         method: "GET",
         url: `/tasks/${taskId}`,
       });
-      
+
       return {
         task: response.data.task,
-        parentTask: response.data.parentTask
+        parentTask: response.data.parentTask,
       };
     } catch (error) {
       console.error(`Error fetching task ${taskId}:`, error);
@@ -54,7 +54,7 @@ export const taskService = {
     }
   },
   toggleFavorite: async (taskId: string) => {
-    const response = await apiRequest<{ data: { task: Task  } }>({
+    const response = await apiRequest<{ data: { task: Task } }>({
       method: "POST",
       url: `/tasks/${taskId}/favorite`,
     });
@@ -74,8 +74,7 @@ export const taskService = {
 
   // Create a new task
   createTask: async (taskData: CreateTaskDto) => {
-
-    console.log("taskData",taskData)
+    console.log("taskData", taskData);
     const response = await apiRequest<{ data: { data: { task: Task } } }>({
       method: "POST",
       url: "/tasks",
@@ -87,12 +86,12 @@ export const taskService = {
 
   // Update an existing task
   updateTask: async (taskId: string, taskData: UpdateTaskDto) => {
-    const response = await apiRequest<{ data:  { task: Task  } }>({
+    const response = await apiRequest<{ data: { task: Task } }>({
       method: "PUT",
       url: `/tasks/${taskId}`,
       data: taskData,
     });
-    console.log("taskid",taskId)
+    console.log("taskid", taskId);
 
     return response.data.task;
   },
@@ -116,7 +115,7 @@ export const taskService = {
       position?: number;
     }
   ) => {
-    const response = await apiRequest<{ data: { task: Task  } }>({
+    const response = await apiRequest<{ data: { task: Task } }>({
       method: "POST",
       url: `/tasks/${taskId}/move`,
       data: options,
@@ -162,7 +161,7 @@ export const taskService = {
     });
     return response.data;
   },
-  
+
   getAllTasks: async (filters?: {
     status?: string;
     priority?: string;
@@ -176,33 +175,41 @@ export const taskService = {
   }) => {
     try {
       const queryParams = new URLSearchParams();
-      
+
       // Set default pagination if not provided
-      if (!filters?.page) queryParams.set('page', '1');
-      if (!filters?.limit) queryParams.set('limit', '50');
-      
+      if (!filters?.page) queryParams.set("page", "1");
+      if (!filters?.limit) queryParams.set("limit", "50");
+
       if (filters) {
         Object.entries(filters).forEach(([key, val]) => {
-
           if (val !== undefined && val !== null && val !== "all") {
             queryParams.set(key, String(val));
           }
         });
       }
-      
+
       const url = `/tasks/all?${queryParams.toString()}`;
-  
-      
-      const response = await apiRequest<{ data: Task[], pagination?: any }>({
+
+      const response = await apiRequest<{ data: Task[]; pagination?: any }>({
         method: "GET",
         url: url,
       });
-      
-      return response;  
+
+      return response;
     } catch (error) {
       console.error("Error fetching all tasks:", error);
       throw error;
     }
   },
 
+  getTaskComments: async (taskId: string) => {
+    const response = await apiRequest<{
+      status: string;
+      data: { comments: Comment[] };
+    }>({
+      method: "GET",
+      url: `/tasks/${taskId}/comments`,
+    });
+    return response.data.comments;
+  },
 };

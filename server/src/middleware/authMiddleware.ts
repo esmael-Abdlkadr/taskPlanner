@@ -4,6 +4,7 @@ import HttpError from "../utils/httpError";
 import { verifyToken } from "../utils/tokenUtil";
 import { User } from "../models/User";
 import { Workspace } from "../models/Workspace";
+import { WorkspaceMember } from "../models/workSpaceMember";
 /**
  * Authentication middleware
  */
@@ -63,27 +64,33 @@ export const checkWorkspaceMember = asyncHandler(
       return next(new HttpError("Workspace ID is required", 400));
     }
 
-    // Check if user owns the workspace
-    const workspace = await Workspace.findOne({
-      _id: workspaceId,
-      ownerId: userId,
-    });
+    // Check if workspace exists
+    const workspace = await Workspace.findById(workspaceId);
 
-    if (workspace) {
-      // User is owner, proceed
-      req.workspace = workspace; // Assign workspace to the extended Request type
+    if (!workspace) {
+      return next(new HttpError("Workspace not found", 404));
+    }
+
+    // Check if user is owner
+    if (workspace.ownerId === userId) {
+      req.workspace = workspace;
       return next();
     }
 
-    // Check if user is a member (would need to implement WorkspaceMember check)
-    const isMember = false; // Replace with actual check from WorkspaceMember model
+    // Check if user is a member of the workspace (using the role field, not status)
+    const workspaceMember = await WorkspaceMember.findOne({
+      workspaceId,
+      userId,
+    });
 
-    if (!isMember) {
+    if (!workspaceMember) {
       return next(
         new HttpError("Access denied: Not a member of this workspace", 403)
       );
     }
 
+    // User is a member, proceed
+    req.workspace = workspace;
     next();
   }
 );

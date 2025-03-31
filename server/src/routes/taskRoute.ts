@@ -12,7 +12,7 @@ import {
   getSubtasks,
   getAllTasks,
 } from "../controllers/taskController";
-import { protect } from "../middleware/authMiddleware";
+import { checkWorkspaceMember, protect } from "../middleware/authMiddleware";
 
 const router = express.Router();
 router.get("/workspaces/:workspaceId/tasks", protect, getTasks);

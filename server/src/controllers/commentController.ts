@@ -6,8 +6,12 @@ import { Task } from "../models/Task";
 import { Workspace } from "../models/Workspace";
 import { ActivityLog } from "../models/ActivityLog";
 import { User } from "../models/User";
-import { createCommentSchema, updateCommentSchema } from "../validators/validatorSchema";
+import {
+  createCommentSchema,
+  updateCommentSchema,
+} from "../validators/validatorSchema";
 import notificationService from "../service/notificationService";
+import { WorkspaceMember } from "../models/workSpaceMember";
 
 /**
  * Get comments for a task
@@ -22,47 +26,52 @@ export const getTaskComments = asyncHandler(
     }
 
     try {
-      // Check if task exists
       const task = await Task.findById(taskId);
       if (!task) {
         return next(new HttpError("Task not found", 404));
       }
-
-      // Check workspace access
-      const workspace = await Workspace.findOne({ 
-        _id: task.workspaceId,
-        $or: [
-          { ownerId: userId },
-          // Would add a check for workspace members here
-        ]
-      });
+      const workspace = await Workspace.findById(task.workspaceId);
 
       if (!workspace) {
-        return next(new HttpError("Access denied", 403));
+        return next(new HttpError("Workspace not found", 404));
+      }
+      const isOwner = String(workspace.ownerId) === String(userId);
+
+      if (!isOwner) {
+        const isMember = await WorkspaceMember.findOne({
+          workspaceId: task.workspaceId,
+          userId,
+        });
+
+        if (!isMember) {
+          return next(
+            new HttpError("Access denied: Not a member of this workspace", 403)
+          );
+        }
       }
 
       // Get top-level comments
-      const comments = await Comment.find({ 
+      const comments = await Comment.find({
         taskId,
-        parentId: null
+        parentId: null,
       })
-      .sort({ createdAt: -1 })
-      .populate('userId', 'firstName lastName avatar')
-      .populate({
-        path: 'replies',
-        options: { sort: { createdAt: 1 } },
-        populate: { 
-          path: 'userId',
-          select: 'firstName lastName avatar'
-        }
-      });
+        .sort({ createdAt: -1 })
+        .populate("userId", "firstName lastName avatar")
+        .populate({
+          path: "replies",
+          options: { sort: { createdAt: 1 } },
+          populate: {
+            path: "userId",
+            select: "firstName lastName avatar",
+          },
+        });
 
       res.status(200).json({
-        status: 'success',
-        data: { comments }
+        status: "success",
+        data: { comments },
       });
     } catch (error) {
-      console.error('Error fetching comments:', error);
+      console.error("Error fetching comments:", error);
       return next(new HttpError("Failed to fetch comments", 500));
     }
   }
@@ -88,8 +97,10 @@ export const createComment = asyncHandler(
       return next(new HttpError("Authentication required", 401));
     }
 
-    const { content, taskId, parentId, attachments, mentions } = parsedResult.data;
+    const { content, taskId, parentId, attachments, mentions } =
+      parsedResult.data;
 
+    console.log("parsedResult.data", parsedResult.data);
     try {
       // Check if task exists
       const task = await Task.findById(taskId);
@@ -97,14 +108,25 @@ export const createComment = asyncHandler(
         return next(new HttpError("Task not found", 404));
       }
 
-      // Check workspace access
-      const workspace = await Workspace.findOne({ 
-        _id: task.workspaceId,
-        $or: [
-          { ownerId: userId },
-          // Would add a check for workspace members here
-        ]
-      });
+      const workspace = await Workspace.findById(task.workspaceId);
+
+      if (!workspace) {
+        return next(new HttpError("Workspace not found", 404));
+      }
+      const isOwner = String(workspace.ownerId) === String(userId);
+
+      if (!isOwner) {
+        const isMember = await WorkspaceMember.findOne({
+          workspaceId: task.workspaceId,
+          userId,
+        });
+
+        if (!isMember) {
+          return next(
+            new HttpError("Access denied: Not a member of this workspace", 403)
+          );
+        }
+      }
 
       if (!workspace) {
         return next(new HttpError("Access denied", 403));
@@ -117,46 +139,47 @@ export const createComment = asyncHandler(
           return next(new HttpError("Parent comment not found", 404));
         }
         if ((parentComment.taskId as any).toString() !== taskId) {
-          return next(new HttpError("Parent comment doesn't belong to this task", 400));
+          return next(
+            new HttpError("Parent comment doesn't belong to this task", 400)
+          );
         }
       }
 
-      // Create the comment
       const comment = await Comment.create({
         content,
         taskId,
         userId,
         parentId: parentId || null,
         attachments,
-        mentions
+        mentions,
       });
 
-      // Get populated comment
-      const populatedComment = await Comment.findById(comment._id)
-        .populate('userId', 'firstName lastName avatar');
+      const populatedComment = await Comment.findById(comment._id).populate(
+        "userId",
+        "firstName lastName avatar"
+      );
 
-      // Log activity
       await ActivityLog.create({
         entityId: task._id,
-        entityType: 'task',
+        entityType: "task",
         userId,
-        action: 'comment',
-        details: { 
+        action: "comment",
+        details: {
           taskTitle: task.title,
           commentId: comment._id,
-          isReply: !!parentId
-        }
+          isReply: !!parentId,
+        },
       });
 
       // Send mention notifications if there are mentions
       if (mentions && mentions.length > 0) {
         const authorName = `${user.firstName} ${user.lastName}`;
-        
+
         // Process in background - don't wait for email sending to complete
         notificationService.sendMentionNotifications(
-          mentions, 
-          content, 
-          taskId, 
+          mentions,
+          content,
+          taskId,
           authorName
         );
       }
@@ -164,8 +187,8 @@ export const createComment = asyncHandler(
       // Send notification about new comment to task assignee
       if (task.assigneeId && task.assigneeId.toString() !== userId.toString()) {
         const authorName = `${user.firstName} ${user.lastName}`;
-        
-        // Process in background
+
+        // Process in background - don't wait for email sending to complete
         notificationService.sendNewCommentNotification(
           taskId,
           content,
@@ -175,12 +198,12 @@ export const createComment = asyncHandler(
       }
 
       res.status(201).json({
-        status: 'success',
-        message: 'Comment added successfully',
-        data: { comment: populatedComment }
+        status: "success",
+        message: "Comment added successfully",
+        data: { comment: populatedComment },
       });
     } catch (error) {
-      console.error('Error creating comment:', error);
+      console.error("Error creating comment:", error);
       return next(new HttpError("Failed to add comment", 500));
     }
   }
@@ -202,7 +225,7 @@ export const updateComment = asyncHandler(
 
     const userId = req.user?._id;
     const user = req.user;
-    
+
     if (!userId || !user) {
       return next(new HttpError("Authentication required", 401));
     }
@@ -213,16 +236,21 @@ export const updateComment = asyncHandler(
       // Check if comment exists and belongs to user
       const comment = await Comment.findOne({
         _id: id,
-        userId
+        userId,
       });
 
       if (!comment) {
-        return next(new HttpError("Comment not found or you don't have permission to edit it", 404));
+        return next(
+          new HttpError(
+            "Comment not found or you don't have permission to edit it",
+            404
+          )
+        );
       }
-      
+
       // Store original mentions for comparison
       const originalMentions = comment.mentions || [];
-      
+
       // Update the comment
       comment.content = content;
       if (attachments) comment.attachments = attachments;
@@ -230,32 +258,35 @@ export const updateComment = asyncHandler(
       await comment.save();
 
       // Find new mentions that weren't in the original comment
-      const newMentions = mentions ? mentions.filter(m => !originalMentions.includes(m)) : [];
+      const newMentions = mentions
+        ? mentions.filter((m) => !originalMentions.includes(m))
+        : [];
 
       // Send notifications for new mentions if any
       if (newMentions.length > 0) {
         const authorName = `${user.firstName} ${user.lastName}`;
-        
+
         // Process in background
         notificationService.sendMentionNotifications(
-          newMentions, 
-          content, 
+          newMentions,
+          content,
           String(comment.taskId),
           authorName
         );
       }
 
-      // Get populated comment
-      const populatedComment = await Comment.findById(comment._id)
-        .populate('userId', 'firstName lastName avatar');
+      const populatedComment = await Comment.findById(comment._id).populate(
+        "userId",
+        "firstName lastName avatar"
+      );
 
       res.status(200).json({
-        status: 'success',
-        message: 'Comment updated successfully',
-        data: { comment: populatedComment }
+        status: "success",
+        message: "Comment updated successfully",
+        data: { comment: populatedComment },
       });
     } catch (error) {
-      console.error('Error updating comment:', error);
+      console.error("Error updating comment:", error);
       return next(new HttpError("Failed to update comment", 500));
     }
   }
@@ -277,11 +308,16 @@ export const deleteComment = asyncHandler(
       // Check if comment exists and belongs to user
       const comment = await Comment.findOne({
         _id: id,
-        userId
+        userId,
       });
 
       if (!comment) {
-        return next(new HttpError("Comment not found or you don't have permission to delete it", 404));
+        return next(
+          new HttpError(
+            "Comment not found or you don't have permission to delete it",
+            404
+          )
+        );
       }
 
       // If it's a parent comment, delete all replies
@@ -293,11 +329,11 @@ export const deleteComment = asyncHandler(
       await Comment.findByIdAndDelete(id);
 
       res.status(200).json({
-        status: 'success',
-        message: 'Comment deleted successfully'
+        status: "success",
+        message: "Comment deleted successfully",
       });
     } catch (error) {
-      console.error('Error deleting comment:', error);
+      console.error("Error deleting comment:", error);
       return next(new HttpError("Failed to delete comment", 500));
     }
   }
