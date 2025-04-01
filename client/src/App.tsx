@@ -26,7 +26,7 @@ function App() {
         <Toaster
           position="top-center"
           toastOptions={{
-            // Default styles for toast
+
             duration: 4000,
             success: {
               style: {
@@ -48,7 +48,7 @@ function App() {
                 secondary: "#FFFFFF",
               },
             },
-            // Style based on theme
+           
             style: {
               borderRadius: "8px",
               background: "var(--background)",

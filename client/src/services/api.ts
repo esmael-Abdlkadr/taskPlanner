@@ -1,16 +1,16 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
 import { clearStoredAuth } from "../utils/storage";
 
-// Create axios instance with base configuration
 const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  baseURL:
+    import.meta.env.VITE_API_URL ||
+    "https://taskplanner-api.up.railway.app/api",
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 30000, // 30 seconds
+  timeout: 30000,
 });
 
-// Request interceptor for adding auth token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token && config.headers) {
@@ -19,12 +19,10 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor for handling token expiration
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid
       clearStoredAuth();
       window.location.href = "/login";
     }
@@ -32,7 +30,6 @@ api.interceptors.response.use(
   }
 );
 
-// Generic typed API request function
 export const apiRequest = async <T>(config: AxiosRequestConfig): Promise<T> => {
   try {
     const response = await api(config);
