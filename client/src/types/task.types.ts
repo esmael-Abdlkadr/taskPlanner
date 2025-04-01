@@ -157,6 +157,7 @@ export interface TaskStats {
 }
 
 export interface CommentPayload {
+  _id?: string;
   content: string;
   taskId: string;
   parentId?: string | null;

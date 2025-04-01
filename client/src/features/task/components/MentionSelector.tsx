@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import  { useState, useEffect, useRef } from "react";
 import { userService } from "../../../services/userService";
 import { Avatar } from "../../../components/common/Avatar";
 import { AtSign } from "lucide-react";

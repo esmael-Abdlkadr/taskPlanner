@@ -16,6 +16,7 @@ import {
 interface CommentItemProps {
   comment: Comment;
   taskId: string;
+  _id?: string;
 }
 
 export const CommentItem = ({ comment, taskId }: CommentItemProps) => {

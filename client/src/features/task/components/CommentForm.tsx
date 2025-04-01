@@ -48,25 +48,15 @@ export const CommentForm = ({
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // State for mention dropdown
   const [mentionState, setMentionState] = useState({
     isActive: false,
     query: "",
     position: { top: 0, left: 0 },
     startPos: 0,
   });
-
-  // State to track mentions
   const [mentionedUsers, setMentionedUsers] = useState<MentionedUser[]>([]);
-
-  // Get the workspace ID from task data for showing users in the workspace
   const { data: taskData } = useTask(taskId);
   const workspaceId = taskData?.task?.workspaceId || "";
-
-  // Debug log when mentioned users change
-  useEffect(() => {
-    console.log("Current mentioned users:", mentionedUsers);
-  }, [mentionedUsers]);
 
   // Handle text changes and detect @ symbols to trigger the mention dropdown
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -91,13 +81,8 @@ export const CommentForm = ({
     const isMentioning = startPos > 0 && newContent[startPos - 1] === "@";
 
     if (isMentioning) {
-      // Get the text after @ to use as search query
       const mentionText = newContent.substring(startPos, cursorPos);
-
-      // Calculate position for dropdown (simplified)
-      const coords = getCaretCoordinates(textarea, startPos - 1);
-
-      // Update mention state to show dropdown
+      const coords = getCaretCoordinates(textarea);
       setMentionState({
         isActive: true,
         query: mentionText,
@@ -105,41 +90,24 @@ export const CommentForm = ({
         startPos: startPos - 1, // Include the @ symbol
       });
     } else {
-      // Hide dropdown if not typing a mention
       setMentionState((prev) => ({ ...prev, isActive: false }));
     }
   };
-
-  // Calculate position for dropdown (simplistic version)
-  const getCaretCoordinates = (
-    element: HTMLTextAreaElement,
-    position: number
-  ) => {
+  const getCaretCoordinates = (element: HTMLTextAreaElement) => {
     return {
       left: element.offsetLeft + 10,
       top: element.offsetTop + 30,
     };
   };
-
-  // When a user is selected from the dropdown
   const handleSelectUser = (selectedUser: User) => {
-    // Get text before and after the @mention
     const beforeMention = content.substring(0, mentionState.startPos);
     const afterMention = content.substring(
       textareaRef.current?.selectionStart || 0
     );
-
-    // Create a formatted display name for the mentiona
     const displayName = `@${selectedUser.firstName} ${selectedUser.lastName} `;
-
-    // Update the content with the new mention
     const newContent = beforeMention + displayName + afterMention;
     setContent(newContent);
-
-    // Close the dropdown
     setMentionState((prev) => ({ ...prev, isActive: false }));
-
-    // Add user to mentioned users list if not already there
     const alreadyMentioned = mentionedUsers.some(
       (mention) => mention._id === selectedUser._id
     );
@@ -154,13 +122,7 @@ export const CommentForm = ({
           avatar: selectedUser.avatar,
         },
       ]);
-
-      console.log(
-        `Added mention: ${selectedUser.firstName} ${selectedUser.lastName}`
-      );
     }
-
-    // Focus the textarea and move cursor after the inserted mention
     if (textareaRef.current) {
       textareaRef.current.focus();
       const newCursorPos = beforeMention.length + displayName.length;
@@ -168,59 +130,36 @@ export const CommentForm = ({
     }
   };
 
-  // Remove a mentioned user
   const removeMention = (userId: string) => {
-    // Find the user's display name in the content
     const userToRemove = mentionedUsers.find((user) => user._id === userId);
 
     if (!userToRemove) return;
-
-    // Create the display name pattern to find in text
     const mentionPattern = `@${userToRemove.firstName} ${userToRemove.lastName} `;
-
-    // Remove the mention from content
     const newContent = content.replace(mentionPattern, "");
     setContent(newContent);
-
-    // Remove from mentioned users array
     setMentionedUsers((prev) => prev.filter((user) => user._id !== userId));
-
-    console.log(
-      `Removed mention: ${userToRemove.firstName} ${userToRemove.lastName}`
-    );
   };
-
-  console.log("mentioneduser", mentionedUsers);
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
-
-    // Extract mention IDs from mentionedUsers
     const mentionIds = mentionedUsers.map((user) => user._id);
     console.log("Submitting with mentions:", mentionIds);
 
     try {
-      // Submit the comment with mentions
       await onSubmit({
         content,
         taskId,
         parentId,
         mentions: mentionIds.length > 0 ? mentionIds : undefined,
       });
-
-      // Reset form state on success
       setContent("");
       setIsFocused(false);
       setMentionedUsers([]);
-
-      console.log("Comment submitted successfully");
     } catch (error) {
       console.error("Error submitting comment:", error);
     }
   };
 
-  // Close mention selector when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (mentionState.isActive && e.target !== textareaRef.current) {
@@ -232,7 +171,6 @@ export const CommentForm = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [mentionState.isActive]);
 
-  // Render the component
   return (
     <form
       onSubmit={handleSubmit}
@@ -250,7 +188,6 @@ export const CommentForm = ({
       />
 
       <div className="flex-1 relative">
-        {/* Comment text input */}
         <textarea
           ref={textareaRef}
           className={`w-full border rounded-lg px-3 py-2 ${
@@ -264,7 +201,6 @@ export const CommentForm = ({
           disabled={isSubmitting}
         />
 
-        {/* Styled preview of text with mentions highlighted */}
         {mentionedUsers.length > 0 && isFocused && (
           <div className="mt-2 text-xs text-gray-500">
             <div className="flex items-center mb-1">
@@ -304,7 +240,6 @@ export const CommentForm = ({
           />
         )}
 
-        {/* Form controls */}
         {isFocused && (
           <div className="flex justify-between items-center mt-3">
             <div className="text-gray-500 text-sm">

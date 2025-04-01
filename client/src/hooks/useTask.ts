@@ -8,7 +8,6 @@ import {
   TaskFilter,
 } from "../types/task.types";
 import { toast } from "react-hot-toast";
-import { commentService } from "../services/comment";
 
 export const useWorkspaceTasks = (
   workspaceId: string | undefined,

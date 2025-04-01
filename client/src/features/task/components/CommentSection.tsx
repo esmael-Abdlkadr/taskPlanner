@@ -1,5 +1,6 @@
 import { useAddComment } from "../../../hooks/useComment";
 import { useTaskComments } from "../../../hooks/useTask";
+import { Comment } from "../../../types/comment.types";
 import { CommentForm } from "./CommentForm";
 import { CommentItem } from "./CommentItem";
 import { MessageCircle } from "lucide-react";
@@ -14,7 +15,7 @@ export const CommentsSection = ({ taskId }: CommentsSectionProps) => {
     isLoading,
     isError,
   } = useTaskComments(taskId) as {
-    data: Comment[];
+    data: Comment[] | undefined;
     isLoading: boolean;
     isError: boolean;
   };
