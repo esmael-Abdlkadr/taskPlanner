@@ -7,6 +7,7 @@ import { Workspace } from "../models/Workspace";
 import { Task } from "../models/Task";
 import { ActivityLog } from "../models/ActivityLog";
 import { createTagSchema, updateTagSchema } from "../validators/validatorSchema";
+import { WorkspaceMember } from "../models/workSpaceMember";
 
 /**
  * Get tags for a workspace
@@ -21,24 +22,30 @@ export const getWorkspaceTags = asyncHandler(
     }
 
     try {
-      // Check workspace access
-      const workspace = await Workspace.findOne({ 
-        _id: workspaceId,
-        $or: [
-          { ownerId: userId },
-          // Would add a check for workspace members here
-        ]
-      });
+
+      const workspace = await Workspace.findById(workspaceId);
 
       if (!workspace) {
-        return next(new HttpError("Workspace not found or access denied", 404));
+        return next(new HttpError("Workspace not found", 404));
       }
+
+      const isOwner = String(workspace.ownerId) === String(userId);
+      if (!isOwner) {
+        const membership = await WorkspaceMember.findOne({
+          workspaceId: workspaceId,
+          userId,
+        });
+
+        if (!membership) {
+          return next(new HttpError("Access denied to this workspace", 403));
+        }
+
+      }
+
 
       // Get tags
       const tags = await Tag.find({ workspaceId })
         .sort({ name: 1 });
-
-      // Get usage count for each tag
       const tagCounts = await Promise.all(
         tags.map(async (tag) => {
           const count = await TaskTag.countDocuments({ tagId: tag._id });
@@ -73,30 +80,34 @@ export const getTaskTags = asyncHandler(
     }
 
     try {
-      // Check if task exists
       const task = await Task.findById(taskId);
       if (!task) {
         return next(new HttpError("Task not found", 404));
       }
 
-      // Check workspace access
-      const workspace = await Workspace.findOne({ 
-        _id: task.workspaceId,
-        $or: [
-          { ownerId: userId },
-          // Would add a check for workspace members here
-        ]
-      });
+      const workspace = await Workspace.findById(task.workspaceId);
 
       if (!workspace) {
-        return next(new HttpError("Access denied", 403));
+        return next(new HttpError("Workspace not found", 404));
       }
 
-      // Get task tags
+      // Check if user is owner
+      const isOwner = String(workspace.ownerId) === String(userId);
+
+      // If not owner, check if user is a member
+      if (!isOwner) {
+        const membership = await WorkspaceMember.findOne({
+          workspaceId: task.workspaceId,
+          userId,
+        });
+
+        if (!membership) {
+          return next(new HttpError("Access denied to this workspace", 403));
+        }
+      }
       const taskTags = await TaskTag.find({ taskId })
         .populate('tagId');
 
-      // Format the response
       const tags = taskTags.map(tt => tt.tagId);
 
       res.status(200).json({
@@ -131,20 +142,27 @@ export const createTag = asyncHandler(
     const { name, color = "#3B82F6", workspaceId } = parsedResult.data;
 
     try {
-      // Check workspace access
-      const workspace = await Workspace.findOne({ 
-        _id: workspaceId,
-        $or: [
-          { ownerId: userId },
-          // Would add a check for workspace members here
-        ]
-      });
+      const workspace = await Workspace.findById(workspaceId);
 
       if (!workspace) {
-        return next(new HttpError("Workspace not found or access denied", 404));
+        return next(new HttpError("Workspace not found", 404));
       }
 
-      // Check for duplicate tag name in this workspace
+      // Check if user is owner
+      const isOwner = String(workspace.ownerId) === String(userId);
+
+      // If not owner, check if user is a member
+      if (!isOwner) {
+        const membership = await WorkspaceMember.findOne({
+          workspaceId: workspaceId,
+          userId,
+        });
+
+        if (!membership) {
+          return next(new HttpError("Access denied to this workspace", 403));
+        }
+      }
+  
       const existingTag = await Tag.findOne({ 
         name,
         workspaceId
@@ -154,14 +172,14 @@ export const createTag = asyncHandler(
         return next(new HttpError("A tag with this name already exists in the workspace", 400));
       }
 
-      // Create the tag
+
       const tag = await Tag.create({
         name,
         color,
         workspaceId
       });
 
-      // Log activity
+  
       await ActivityLog.create({
         entityId: tag._id,
         entityType: 'tag',
@@ -204,25 +222,29 @@ export const updateTag = asyncHandler(
     const { name, color } = parsedResult.data;
 
     try {
-      // Find the tag
       const tag = await Tag.findById(id);
       if (!tag) {
         return next(new HttpError("Tag not found", 404));
       }
 
-      // Check workspace access
-      const workspace = await Workspace.findOne({ 
-        _id: tag.workspaceId,
-        $or: [
-          { ownerId: userId },
-          // Would add a check for workspace members here
-        ]
-      });
+      const workspace = await Workspace.findById(id);
 
       if (!workspace) {
-        return next(new HttpError("Access denied", 403));
+        return next(new HttpError("Workspace not found", 404));
       }
 
+      const isOwner = String(workspace.ownerId) === String(userId);
+      if (!isOwner) {
+        const membership = await WorkspaceMember.findOne({
+          workspaceId: id,
+          userId,
+        });
+
+        if (!membership) {
+          return next(new HttpError("Access denied to this workspace", 403));
+        }
+      }
+  
       // Check for duplicate name if changing name
       if (name && name !== tag.name) {
         const existingTag = await Tag.findOne({ 
@@ -234,14 +256,12 @@ export const updateTag = asyncHandler(
         if (existingTag) {
           return next(new HttpError("A tag with this name already exists in the workspace", 400));
         }
-      }
-
-      // Update the tag
+      };
       if (name) tag.name = name;
       if (color) tag.color = color;
       await tag.save();
 
-      // Log activity
+
       await ActivityLog.create({
         entityId: tag._id,
         entityType: 'tag',
@@ -275,38 +295,37 @@ export const deleteTag = asyncHandler(
     }
 
     try {
-      // Find the tag
       const tag = await Tag.findById(id);
       if (!tag) {
         return next(new HttpError("Tag not found", 404));
       }
+      const workspace = await Workspace.findById(id);
 
-      // Check workspace access
-      const workspace = await Workspace.findOne({ 
-        _id: tag.workspaceId,
-        $or: [
-          { ownerId: userId },
-          // Would add a check for workspace members here
-        ]
-      });
+      if (!workspace) {
+        return next(new HttpError("Workspace not found", 404));
+      }
+      const isOwner = String(workspace.ownerId) === String(userId);
+
+      if (!isOwner) {
+        const membership = await WorkspaceMember.findOne({
+          workspaceId: id,
+          userId,
+        });
+
+        if (!membership) {
+          return next(new HttpError("Access denied to this workspace", 403));
+        }}
 
       if (!workspace) {
         return next(new HttpError("Access denied", 403));
       }
-
-      // Store tag info for activity log
       const tagInfo = {
         name: tag.name,
         workspaceId: tag.workspaceId
       };
-
-      // Delete all task associations
       await TaskTag.deleteMany({ tagId: tag._id });
-
-      // Delete the tag
       await Tag.findByIdAndDelete(id);
 
-      // Log activity
       await ActivityLog.create({
         entityId: tag.workspaceId,
         entityType: 'workspace',
@@ -339,24 +358,19 @@ export const addTaskTag = asyncHandler(
     }
 
     try {
-      // Check if task exists
       const task = await Task.findById(taskId);
       if (!task) {
         return next(new HttpError("Task not found", 404));
       }
-
-      // Check if tag exists
       const tag = await Tag.findById(tagId);
       if (!tag) {
         return next(new HttpError("Tag not found", 404));
       }
-
-      // Check workspace access
       const workspace = await Workspace.findOne({ 
         _id: task.workspaceId,
         $or: [
           { ownerId: userId },
-          // Would add a check for workspace members here
+    
         ]
       });
 
@@ -364,12 +378,9 @@ export const addTaskTag = asyncHandler(
         return next(new HttpError("Access denied", 403));
       }
 
-      // Check if tag and task are in the same workspace
       if (String(tag.workspaceId) !== String(task.workspaceId)) {
         return next(new HttpError("Tag and task must be in the same workspace", 400));
       }
-
-      // Check if tag is already added to task
       const existingTaskTag = await TaskTag.findOne({
         taskId,
         tagId
@@ -377,15 +388,11 @@ export const addTaskTag = asyncHandler(
 
       if (existingTaskTag) {
         return next(new HttpError("Tag already added to this task", 400));
-      }
-
-      // Add tag to task
+      };
       const taskTag = await TaskTag.create({
         taskId,
         tagId
       });
-
-      // Log activity
       await ActivityLog.create({
         entityId: task._id,
         entityType: 'task',
@@ -425,32 +432,24 @@ export const removeTaskTag = asyncHandler(
     }
 
     try {
-      // Check if task exists
       const task = await Task.findById(taskId);
       if (!task) {
         return next(new HttpError("Task not found", 404));
-      }
-
-      // Check if tag exists
+      };
       const tag = await Tag.findById(tagId);
       if (!tag) {
         return next(new HttpError("Tag not found", 404));
       }
-
-      // Check workspace access
       const workspace = await Workspace.findOne({ 
         _id: task.workspaceId,
         $or: [
           { ownerId: userId },
-          // Would add a check for workspace members here
         ]
       });
 
       if (!workspace) {
         return next(new HttpError("Access denied", 403));
       }
-
-      // Find and delete the task tag association
       const taskTag = await TaskTag.findOneAndDelete({
         taskId,
         tagId
@@ -460,7 +459,6 @@ export const removeTaskTag = asyncHandler(
         return next(new HttpError("Tag is not assigned to this task", 404));
       }
 
-      // Log activity
       await ActivityLog.create({
         entityId: task._id,
         entityType: 'task',
@@ -497,19 +495,18 @@ export const searchTasksByTag = asyncHandler(
     }
 
     try {
-      // Check if tag exists
       const tag = await Tag.findById(tagId);
       if (!tag) {
         return next(new HttpError("Tag not found", 404));
       }
 
-      // Check workspace access if specified
+
       if (workspaceId) {
         const workspace = await Workspace.findOne({ 
           _id: workspaceId,
           $or: [
             { ownerId: userId },
-            // Would add a check for workspace members here
+        
           ]
         });
 
@@ -518,25 +515,19 @@ export const searchTasksByTag = asyncHandler(
         }
       }
 
-      // Find all task-tag associations with this tag
+    
       const query: any = { tagId };
-      
-      // Add workspace filter if provided
+    
       if (workspaceId) {
-        // We need to first find all tasks in this workspace
         const workspaceTasks = await Task.find({ workspaceId }).select('_id');
         const workspaceTaskIds = workspaceTasks.map(task => task._id);
-        
-        // Then find tag associations only for these tasks
         query.taskId = { $in: workspaceTaskIds };
       }
       
       const taskTags = await TaskTag.find(query);
-      
-      // Get the task IDs
+    
       const taskIds = taskTags.map(tt => tt.taskId);
       
-      // Get the actual tasks
       const tasks = await Task.find({
         _id: { $in: taskIds }
       }).populate('assigneeId', 'firstName lastName avatar');
@@ -574,18 +565,15 @@ export const batchUpdateTaskTags = asyncHandler(
     }
 
     try {
-      // Check if task exists
       const task = await Task.findById(taskId);
       if (!task) {
         return next(new HttpError("Task not found", 404));
       }
-
-      // Check workspace access
       const workspace = await Workspace.findOne({ 
         _id: task.workspaceId,
         $or: [
           { ownerId: userId },
-          // Would add a check for workspace members here
+    
         ]
       });
 
@@ -593,34 +581,33 @@ export const batchUpdateTaskTags = asyncHandler(
         return next(new HttpError("Access denied", 403));
       }
 
-      // Get current tag associations
+
       const currentTaskTags = await TaskTag.find({ taskId });
       const currentTagIds = currentTaskTags.map(tt => String(tt.tagId));
       
-      // Identify tags to add and remove
+
       const tagsToAdd = tagIds.filter(id => !currentTagIds.includes(id));
       const tagsToRemove = currentTagIds.filter(id => !tagIds.includes(id));
       
-      // Process tags to add
+  
       const addPromises = tagsToAdd.map(async (tagId) => {
-        // Verify tag exists and is in same workspace
+      
         const tag = await Tag.findById(tagId);
         if (!tag) return null;
         if ( String( tag.workspaceId) !== String(task.workspaceId)) return null;
-        
-        // Create new association
+    
         return TaskTag.create({ taskId, tagId });
       });
       
-      // Process tags to remove
+ 
       const removePromises = tagsToRemove.map(tagId => {
         return TaskTag.findOneAndDelete({ taskId, tagId });
       });
       
-      // Execute all operations
+
       await Promise.all([...addPromises, ...removePromises]);
       
-      // Log activity
+
       await ActivityLog.create({
         entityId: task._id,
         entityType: 'task',
@@ -633,7 +620,7 @@ export const batchUpdateTaskTags = asyncHandler(
         }
       });
       
-      // Get updated tag list
+
       const updatedTaskTags = await TaskTag.find({ taskId })
         .populate('tagId');
         

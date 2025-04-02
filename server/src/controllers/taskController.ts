@@ -38,9 +38,9 @@ export const getTasks = asyncHandler(
 
     // Filter by parent
     if (parentId === "null" || parentId === undefined) {
-      conditions.parentId = null; // Root level tasks
+      conditions.parentId = null; 
     } else if (parentId) {
-      conditions.parentId = parentId; // Specific parent's subtasks
+      conditions.parentId = parentId; 
     }
     if (status) conditions.status = status;
     if (priority) conditions.priority = priority;
@@ -80,12 +80,10 @@ export const getTasks = asyncHandler(
       return next(new HttpError("Workspace not found", 404));
     }
 
-    // Check if user is owner or member
     const isOwner =
       (workspace.ownerId as string).toString() === userId.toString();
 
     if (!isOwner) {
-      // Check if user is a member
       const isMember = await WorkspaceMember.findOne({
         workspaceId,
         userId,
@@ -106,7 +104,6 @@ export const getTasks = asyncHandler(
     sortOptions[sortField] = sortDirection;
 
     try {
-      // Fetch tasks with pagination
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 50;
       const skip = (page - 1) * limit;
@@ -117,9 +114,7 @@ export const getTasks = asyncHandler(
         .limit(limit)
         .populate("assigneeId", "firstName lastName avatar")
         .lean();
-      console.log("tasks", tasks);
 
-      // Count total for pagination
       const total = await Task.countDocuments(conditions);
 
       res.status(200).json({
@@ -148,8 +143,6 @@ export const getAllTasks = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.user?._id;
-
-      // Query parameters
       const {
         status,
         priority,
@@ -164,7 +157,7 @@ export const getAllTasks = asyncHandler(
 
       console.log("req.query", req.query);
 
-      // Build filter conditions
+ 
       const filter: any = {
         $or: [{ ownerId: userId }, { assigneeId: userId }],
       };
@@ -193,7 +186,7 @@ export const getAllTasks = asyncHandler(
         }
       }
 
-      // Search filter
+    
       if (search) {
         filter.$or = [
           { title: { $regex: search, $options: "i" } },
@@ -201,14 +194,13 @@ export const getAllTasks = asyncHandler(
         ];
       }
 
-      // Calculate pagination
+
       const skip = (Number(page) - 1) * Number(limit);
 
-      // Create sort options
+
       const sortOptions: any = {};
       sortOptions[sort as string] = order === "asc" ? 1 : -1;
 
-      // Query tasks with population of related data
       const tasks = await Task.find(filter)
         .populate("workspaceId", "name color isPersonal")
         .populate("assigneeId", "firstName lastName avatar")
@@ -217,7 +209,6 @@ export const getAllTasks = asyncHandler(
         .skip(skip)
         .limit(Number(limit));
 
-      // Get total count for pagination
       const total = await Task.countDocuments(filter);
       console.log("data", tasks);
       return res.status(200).json({
@@ -275,13 +266,10 @@ export const getTask = asyncHandler(
       if (!workspace) {
         return next(new HttpError("Workspace not found", 404));
       }
-
-      // Check if user is owner or member
       const isOwner =
         (workspace.ownerId as string).toString() === userId.toString();
 
       if (!isOwner) {
-        // Check if user is a member
         const isMember = await WorkspaceMember.findOne({
           workspaceId: task.workspaceId,
           userId,
@@ -294,7 +282,7 @@ export const getTask = asyncHandler(
         }
       }
 
-      // Get parent task details if exists
+
       let parentTask = null;
       if (task.parentId) {
         parentTask = await Task.findById(task.parentId).select("_id title");
@@ -353,12 +341,10 @@ export const createTask = asyncHandler(
         return next(new HttpError("Workspace not found", 404));
       }
 
-      // Check if user is owner or member
       const isOwner =
         (workspace.ownerId as string).toString() === userId.toString();
 
       if (!isOwner) {
-        // Check if user is a member
         const isMember = await WorkspaceMember.findOne({
           workspaceId,
           userId,
@@ -371,7 +357,6 @@ export const createTask = asyncHandler(
         }
       }
 
-      // Check if parent task exists and is in the same workspace
       if (parentId) {
         const parentTask = await Task.findById(parentId);
         if (!parentTask) {
@@ -395,7 +380,7 @@ export const createTask = asyncHandler(
         taskPosition = lastTask ? lastTask.position + 1000 : 1000;
       }
 
-      // Create the task
+
       const task = await Task.create({
         title,
         description,
@@ -411,7 +396,7 @@ export const createTask = asyncHandler(
         estimatedTime,
       });
 
-      // Log activity
+  
       await ActivityLog.create({
         entityId: task._id,
         entityType: "task",
@@ -451,7 +436,7 @@ export const toggleFavorite = asyncHandler(
     }
 
     try {
-      // Get the task
+ 
       const task = await Task.findById(id);
       if (!task) {
         return next(new HttpError("Task not found", 404));
@@ -463,12 +448,11 @@ export const toggleFavorite = asyncHandler(
         return next(new HttpError("Workspace not found", 404));
       }
 
-      // Check if user is owner or member
       const isOwner =
         (workspace.ownerId as string).toString() === userId.toString();
 
       if (!isOwner) {
-        // Check if user is a member
+
         const isMember = await WorkspaceMember.findOne({
           workspaceId: task.workspaceId,
           userId,
@@ -481,7 +465,7 @@ export const toggleFavorite = asyncHandler(
         }
       }
 
-      // Toggle favorite status
+  
       const isFavorite = !task.isFavorite;
 
       const updatedTask = await Task.findByIdAndUpdate(
@@ -544,12 +528,11 @@ export const updateTask = asyncHandler(
         return next(new HttpError("Workspace not found", 404));
       }
 
-      // Check if user is owner or member
       const isOwner =
         (workspace.ownerId as string).toString() === userId.toString();
 
       if (!isOwner) {
-        // Check if user is a member
+
         const isMember = await WorkspaceMember.findOne({
           workspaceId: task.workspaceId,
           userId,
@@ -562,7 +545,6 @@ export const updateTask = asyncHandler(
         }
       }
 
-      // Check for completion status change to track completion time
       const isBeingCompleted =
         parsedResult.data.status === "completed" && task.status !== "completed";
 
@@ -695,7 +677,6 @@ export const deleteTask = asyncHandler(
     }
 
     try {
-      // Get the task
       const task = await Task.findById(id);
       if (!task) {
         return next(new HttpError("Task not found", 404));
@@ -707,12 +688,10 @@ export const deleteTask = asyncHandler(
         return next(new HttpError("Workspace not found", 404));
       }
 
-      // Check if user is owner or member
       const isOwner =
         (workspace.ownerId as string).toString() === userId.toString();
 
       if (!isOwner) {
-        // Check if user is a member
         const isMember = await WorkspaceMember.findOne({
           workspaceId: task.workspaceId,
           userId,
@@ -728,21 +707,15 @@ export const deleteTask = asyncHandler(
       if (!workspace) {
         return next(new HttpError("Access denied", 403));
       }
-
-      // Function to recursively delete task and its children
       async function deleteTaskAndChildren(taskId: string) {
-        // Find all child tasks
         const childTasks = await Task.find({ parentId: taskId });
-
-        // Recursively delete each child and its descendants
         for (const childTask of childTasks) {
           await deleteTaskAndChildren(String(childTask._id));
         }
 
-        // Delete the task itself
+    
         await Task.findByIdAndDelete(taskId);
 
-        // Log activity
         await ActivityLog.create({
           entityId: taskId,
           entityType: "task",
@@ -752,15 +725,15 @@ export const deleteTask = asyncHandler(
         });
       }
 
-      // Start the recursive deletion
+ 
       await deleteTaskAndChildren(id);
 
       res.status(200).json({
         status: "success",
         message: "Task and all subtasks deleted successfully",
       });
-    } catch (error) {
-      console.error("Error deleting task:", error);
+    } catch  {
+
       return next(new HttpError("Failed to delete task", 500));
     }
   }
@@ -788,7 +761,6 @@ export const moveTask = asyncHandler(
     const { parentId, position, workspaceId } = parsedResult.data;
 
     try {
-      // Get the task
       const task = await Task.findById(id);
       if (!task) {
         return next(new HttpError("Task not found", 404));
@@ -800,12 +772,11 @@ export const moveTask = asyncHandler(
         return next(new HttpError("Workspace not found", 404));
       }
 
-      // Check if user is owner or member
       const isOwner =
         (workspace.ownerId as string).toString() === userId.toString();
 
       if (!isOwner) {
-        // Check if user is a member
+
         const isMember = await WorkspaceMember.findOne({
           workspaceId,
           userId,
@@ -818,25 +789,34 @@ export const moveTask = asyncHandler(
         }
       }
 
-      // If moving to a different workspace
-      if (workspaceId && workspaceId !== String(task.workspaceId)) {
-        // Check access to target workspace
-        const targetWorkspace = await Workspace.findOne({
-          _id: workspaceId,
-          $or: [
-            { ownerId: userId },
-            // Would add a check for workspace members here
-          ],
-        });
 
-        if (!targetWorkspace) {
-          return next(
-            new HttpError("Target workspace not found or access denied", 404)
-          );
+      if (workspaceId && workspaceId !== String(task.workspaceId)) {
+        const workspace = await Workspace.findById(workspaceId);
+
+        if (!workspace) {
+          return next(new HttpError("Workspace not found", 404));
         }
+  
+        const isOwner =
+          (workspace.ownerId as string).toString() === userId.toString();
+  
+        if (!isOwner) {
+  
+          const isMember = await WorkspaceMember.findOne({
+            workspaceId,
+            userId,
+          });
+  
+          if (!isMember) {
+            return next(
+              new HttpError("Access denied: Not a member of this workspace", 403)
+            );
+          }
+        }
+  
       }
 
-      // Check if new parent is valid
+
       if (parentId && parentId !== "null") {
         // Prevent circular references
         if (parentId === String(task._id)) {
@@ -848,7 +828,7 @@ export const moveTask = asyncHandler(
           return next(new HttpError("Parent task not found", 404));
         }
 
-        // If parent is in different workspace, need to move to that workspace
+ 
         if (
           String(parentTask.workspaceId) !== String(task.workspaceId) &&
           !workspaceId
@@ -859,27 +839,27 @@ export const moveTask = asyncHandler(
         }
       }
 
-      // Prepare update data
+
       const updateData: any = {};
 
-      // Update parent
+
       if (parentId === "null") {
         updateData.parentId = null;
       } else if (parentId) {
         updateData.parentId = parentId;
       }
 
-      // Update position
+
       if (position !== undefined) {
         updateData.position = position;
       }
 
-      // Update workspace if specified
+
       if (workspaceId) {
         updateData.workspaceId = workspaceId;
       }
 
-      // Update the task
+
       const updatedTask = await Task.findByIdAndUpdate(id, updateData, {
         new: true,
         runValidators: true,
@@ -889,7 +869,7 @@ export const moveTask = asyncHandler(
         return next(new HttpError("Failed to move task", 500));
       }
 
-      // Log activity
+
       await ActivityLog.create({
         entityId: task._id,
         entityType: "task",
@@ -933,12 +913,12 @@ export const getTaskPath = asyncHandler(
         return next(new HttpError("Workspace not found", 404));
       }
 
-      // Check if user is owner or member
+
       const isOwner =
         (workspace.ownerId as string).toString() === userId.toString();
 
       if (!isOwner) {
-        // Check if user is a member
+  
         const isMember = await WorkspaceMember.findOne({
           workspaceId: task.workspaceId,
           userId,
@@ -951,12 +931,12 @@ export const getTaskPath = asyncHandler(
         }
       }
 
-      // Get all tasks in the path
+
       const pathTasks = await Task.find({
         _id: { $in: task.path },
       }).select("_id title");
 
-      // Add current task to the path
+
       const fullPath = [...pathTasks, { _id: task._id, title: task.title }];
 
       res.status(200).json({
@@ -987,7 +967,7 @@ export const toggleTaskCompletion = asyncHandler(
     }
 
     try {
-      // Get the task
+
       const task = await Task.findById(id);
       if (!task) {
         return next(new HttpError("Task not found", 404));
@@ -999,12 +979,12 @@ export const toggleTaskCompletion = asyncHandler(
         return next(new HttpError("Workspace not found", 404));
       }
 
-      // Check if user is owner or member
+ 
       const isOwner =
         (workspace.ownerId as string).toString() === userId.toString();
 
       if (!isOwner) {
-        // Check if user is a member
+
         const isMember = await WorkspaceMember.findOne({
           workspaceId: task.workspaceId,
           userId,
@@ -1029,7 +1009,7 @@ export const toggleTaskCompletion = asyncHandler(
         { new: true, runValidators: true }
       ).populate("assigneeId", "firstName lastName avatar");
 
-      // Log activity
+  
       await ActivityLog.create({
         entityId: task._id,
         entityType: "task",
@@ -1064,7 +1044,7 @@ export const getSubtasks = asyncHandler(
     }
 
     try {
-      // Find all tasks that have this parentId
+   
       const subtasks = await Task.find({ parentId })
         .sort({ position: 1 })
         .populate("assigneeId", "firstName lastName avatar");

@@ -1,4 +1,4 @@
-import { Document, Types } from "mongoose";
+import mongoose, { Document, Types } from "mongoose";
 
 export interface IUser extends Document {
   firstName: string;
@@ -124,6 +124,26 @@ export interface ICategory extends Document {
   description?: string;
   isDefault: boolean;
   ownerId: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TimeEntry extends Document {
+  taskId: mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
+  startTime: Date;
+  endTime: Date | null;
+  duration: number; // in seconds
+  isPomodoro: boolean;
+  pomodoroConfig?: {
+    workDuration: number; // in minutes
+    breakDuration: number; // in minutes
+    longBreakDuration: number; // in minutes
+    cycles: number;
+  };
+  status: "active" | "paused" | "completed";
+  pausedDuration: number; // total paused time in seconds
+  lastPausedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

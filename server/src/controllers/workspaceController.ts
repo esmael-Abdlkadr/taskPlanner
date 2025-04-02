@@ -20,9 +20,9 @@ import sendEmail from "../utils/sendEmail";
 export const getWorkspaces = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.user?._id;
-    // Get the includeArchived parameter from query string
+
     const includeArchived = req.query.includeArchived === "true";
-    // Get the status parameter (can be 'all', 'active', or 'archived')
+
     const status = (req.query.status as string) || "active";
 
     if (!userId) {
@@ -30,22 +30,18 @@ export const getWorkspaces = asyncHandler(
     }
 
     try {
-      // Prepare filter based on archive status
       let archivedFilter = {};
       if (status === "active") {
         archivedFilter = { isArchived: { $ne: true } };
       } else if (status === "archived") {
         archivedFilter = { isArchived: true };
       }
-      // If status is 'all', don't filter by archived status
 
-      // Find workspaces owned by user
       const ownedWorkspaces = await Workspace.find({
         ownerId: userId,
         ...archivedFilter,
       }).sort({ updatedAt: -1 });
 
-      // Find workspaces where user is a member
       const memberships = await WorkspaceMember.find({
         userId,
       }).select("workspaceId role");
@@ -57,7 +53,6 @@ export const getWorkspaces = asyncHandler(
         ...archivedFilter,
       });
 
-      // Combine and format results
       const workspaces = [
         ...ownedWorkspaces.map((ws) => ({
           ...ws.toObject(),
@@ -75,7 +70,6 @@ export const getWorkspaces = asyncHandler(
         }),
       ];
 
-      // Sort - personal first, then by most recent update
       workspaces.sort((a, b) => {
         if (a.isPersonal && !b.isPersonal) return -1;
         if (!a.isPersonal && b.isPersonal) return 1;
@@ -109,23 +103,19 @@ export const getWorkspace = asyncHandler(
     }
 
     try {
-      // First just find the workspace by ID
       const workspace = await Workspace.findById(id);
 
       if (!workspace) {
         return next(new HttpError("Workspace not found", 404));
       }
 
-      // Determine user's access level
       let role = null;
       let hasAccess = false;
 
-      // Check if user is owner
       if (String(workspace.ownerId) === String(userId)) {
         role = "owner";
         hasAccess = true;
       } else {
-        // Check if user is a member
         const membership = await WorkspaceMember.findOne({
           workspaceId: workspace._id,
           userId,
@@ -141,7 +131,6 @@ export const getWorkspace = asyncHandler(
         return next(new HttpError("Access denied to this workspace", 403));
       }
 
-      // Get workspace statistics
       const totalTasks = await Task.countDocuments({
         workspaceId: workspace._id,
       });
@@ -155,7 +144,6 @@ export const getWorkspace = asyncHandler(
         status: { $ne: "completed" },
       });
 
-      // Get top-level tasks summary (limited to 5)
       const recentTasks = await Task.find({
         workspaceId: workspace._id,
         parentId: null,
@@ -165,7 +153,6 @@ export const getWorkspace = asyncHandler(
         .select("title status priority dueDate")
         .lean();
 
-      // Get member count
       const memberCount =
         (await WorkspaceMember.countDocuments({
           workspaceId: workspace._id,
@@ -223,7 +210,6 @@ export const createWorkspace = asyncHandler(
     } = parsedResult.data;
 
     try {
-      // Check for duplicate name
       const existingWorkspace = await Workspace.findOne({
         name,
         ownerId: userId,
@@ -235,7 +221,6 @@ export const createWorkspace = asyncHandler(
         );
       }
 
-      // Create the workspace
       const workspace = await Workspace.create({
         name,
         description,
@@ -245,7 +230,6 @@ export const createWorkspace = asyncHandler(
         icon,
       });
 
-      // Log activity
       await ActivityLog.create({
         entityId: workspace._id,
         entityType: "workspace",
@@ -259,8 +243,7 @@ export const createWorkspace = asyncHandler(
         message: "Workspace created successfully",
         data: { workspace },
       });
-    } catch (error) {
-      console.error("Error creating workspace:", error);
+    } catch {
       return next(new HttpError("Failed to create workspace", 500));
     }
   }
@@ -286,7 +269,6 @@ export const updateWorkspace = asyncHandler(
     }
 
     try {
-      // Check if workspace exists and user is owner
       const workspace = await Workspace.findOne({
         _id: id,
         ownerId: userId,
@@ -310,7 +292,6 @@ export const updateWorkspace = asyncHandler(
         return next(new HttpError("Personal workspace cannot be renamed", 400));
       }
 
-      // Check for duplicate name
       if (parsedResult.data.name && parsedResult.data.name !== workspace.name) {
         const existingWorkspace = await Workspace.findOne({
           name: parsedResult.data.name,
@@ -325,14 +306,12 @@ export const updateWorkspace = asyncHandler(
         }
       }
 
-      // Update the workspace
       const updatedWorkspace = await Workspace.findByIdAndUpdate(
         id,
         parsedResult.data,
         { new: true, runValidators: true }
       );
 
-      // Log activity
       await ActivityLog.create({
         entityId: workspace._id,
         entityType: "workspace",
@@ -366,19 +345,26 @@ export const archiveWorkspace = asyncHandler(
     }
 
     try {
-      // Check if workspace exists and user is owner
-      const workspace = await Workspace.findOne({
-        _id: id,
-        ownerId: userId,
-      });
+      const workspace = await Workspace.findById(id);
 
       if (!workspace) {
-        return next(
-          new HttpError(
-            "Workspace not found or you don't have permission to archive it",
-            404
-          )
-        );
+        return next(new HttpError("Workspace not found", 404));
+      }
+
+      const isOwner =
+        (workspace.ownerId as string).toString() === userId.toString();
+
+      if (!isOwner) {
+        const isMember = await WorkspaceMember.findOne({
+          workspaceId: id,
+          userId,
+        });
+
+        if (!isMember) {
+          return next(
+            new HttpError("Access denied: Not a member of this workspace", 403)
+          );
+        }
       }
 
       // Prevent archiving personal workspace
@@ -388,11 +374,9 @@ export const archiveWorkspace = asyncHandler(
         );
       }
 
-      // Archive the workspace
       workspace.isArchived = true;
       await workspace.save();
 
-      // Log activity
       await ActivityLog.create({
         entityId: workspace._id,
         entityType: "workspace",
@@ -425,7 +409,6 @@ export const restoreWorkspace = asyncHandler(
     }
 
     try {
-      // Check if workspace exists and user is owner
       const workspace = await Workspace.findOne({
         _id: id,
         ownerId: userId,
@@ -441,11 +424,9 @@ export const restoreWorkspace = asyncHandler(
         );
       }
 
-      // Restore the workspace
       workspace.isArchived = false;
       await workspace.save();
 
-      // Log activity
       await ActivityLog.create({
         entityId: workspace._id,
         entityType: "workspace",
@@ -478,17 +459,14 @@ export const getWorkspaceMembers = asyncHandler(
     }
 
     try {
-      // First find the workspace
       const workspace = await Workspace.findById(id);
 
       if (!workspace) {
         return next(new HttpError("Workspace not found", 404));
       }
 
-      // Check if user is owner
       const isOwner = String(workspace.ownerId) === String(userId);
 
-      // If not owner, check if user is a member
       if (!isOwner) {
         const membership = await WorkspaceMember.findOne({
           workspaceId: id,
@@ -500,12 +478,10 @@ export const getWorkspaceMembers = asyncHandler(
         }
       }
 
-      // Get owner info
       const owner = await User.findById(workspace.ownerId).select(
         "firstName lastName email avatar"
       );
 
-      // Get members
       const members = await WorkspaceMember.find({ workspaceId: id })
         .populate("userId", "firstName lastName email avatar")
         .sort("role");
@@ -522,8 +498,7 @@ export const getWorkspaceMembers = asyncHandler(
           })),
         },
       });
-    } catch (error) {
-      console.error("Error fetching workspace members:", error);
+    } catch {
       return next(new HttpError("Failed to fetch workspace members", 500));
     }
   }
@@ -551,7 +526,6 @@ export const addWorkspaceMember = asyncHandler(
     const { email, role = "member" } = parsedResult.data;
 
     try {
-      // Check if workspace exists and user is owner or admin
       const workspace = await Workspace.findOne({
         _id: id,
       }).populate("ownerId", "firstName lastName email");
@@ -560,7 +534,6 @@ export const addWorkspaceMember = asyncHandler(
         return next(new HttpError("Workspace not found", 404));
       }
 
-      // Check if user is owner or admin
       if ((workspace.ownerId as any)._id.toString() !== userId.toString()) {
         const isMemberAdmin = await WorkspaceMember.findOne({
           workspaceId: id,
@@ -578,7 +551,6 @@ export const addWorkspaceMember = asyncHandler(
         }
       }
 
-      // Find user by email
       const userToAdd = await User.findOne({ email });
       if (!userToAdd) {
         return next(
@@ -586,7 +558,6 @@ export const addWorkspaceMember = asyncHandler(
         );
       }
 
-      // Check if user is already the owner
       if (
         (workspace.ownerId as any)._id.toString() ===
         (userToAdd._id as string).toString()
@@ -594,7 +565,6 @@ export const addWorkspaceMember = asyncHandler(
         return next(new HttpError("User is already the workspace owner", 400));
       }
 
-      // Check if user is already a member
       const existingMember = await WorkspaceMember.findOne({
         workspaceId: id,
         userId: userToAdd._id,
@@ -606,13 +576,11 @@ export const addWorkspaceMember = asyncHandler(
         );
       }
 
-      // Find inviter details for the email
       const inviter = await User.findById(userId).select("firstName lastName");
       if (!inviter) {
         return next(new HttpError("Inviter not found", 500));
       }
 
-      // Add user as member
       const member = await WorkspaceMember.create({
         workspaceId: id,
         userId: userToAdd._id,
@@ -620,7 +588,6 @@ export const addWorkspaceMember = asyncHandler(
         invitedBy: userId,
       });
 
-      // Get member with user details
       const populatedMember = await WorkspaceMember.findById(
         member._id
       ).populate("userId", "firstName lastName email avatar");
@@ -629,7 +596,6 @@ export const addWorkspaceMember = asyncHandler(
         return next(new HttpError("Failed to retrieve the added member", 500));
       }
 
-      // Log activity
       await ActivityLog.create({
         entityId: workspace._id,
         entityType: "workspace",
@@ -642,8 +608,7 @@ export const addWorkspaceMember = asyncHandler(
         },
       });
 
-      // Send invitation email
-      const appUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      const appUrl = process.env.FRONTEND_URL || "http://localhost:5173";
       const workspaceUrl = `${appUrl}/workspaces/${workspace._id}`;
       const emailData = {
         userName: userToAdd.firstName,
@@ -663,7 +628,6 @@ export const addWorkspaceMember = asyncHandler(
         });
       } catch (emailError) {
         console.error("Failed to send invitation email:", emailError);
-        // Continue with the response even if email fails
       }
 
       res.status(201).json({
@@ -707,7 +671,6 @@ export const updateWorkspaceMemberRole = asyncHandler(
     const { role } = parsedResult.data;
 
     try {
-      // Check if workspace exists and user is owner
       const workspace = await Workspace.findOne({
         _id: workspaceId,
         ownerId: userId,
@@ -722,7 +685,6 @@ export const updateWorkspaceMemberRole = asyncHandler(
         );
       }
 
-      // Find the membership
       const member = await WorkspaceMember.findById(memberId).populate(
         "userId",
         "firstName lastName email"
@@ -732,11 +694,9 @@ export const updateWorkspaceMemberRole = asyncHandler(
         return next(new HttpError("Member not found in this workspace", 404));
       }
 
-      // Update role
       member.role = role;
       await member.save();
 
-      // Log activity
       await ActivityLog.create({
         entityId: workspace._id,
         entityType: "workspace",
@@ -779,19 +739,16 @@ export const removeWorkspaceMember = asyncHandler(
     }
 
     try {
-      // Check if workspace exists
       const workspace = await Workspace.findById(workspaceId);
 
       if (!workspace) {
         return next(new HttpError("Workspace not found", 404));
       }
 
-      // Check if user has permission to remove members
       const isOwner = String(workspace.ownerId) === String(userId);
       let hasPermission = isOwner;
 
       if (!isOwner) {
-        // Check if user is an admin member
         const userMembership = await WorkspaceMember.findOne({
           workspaceId,
           userId,
@@ -807,7 +764,6 @@ export const removeWorkspaceMember = asyncHandler(
         );
       }
 
-      // Find the membership to be removed
       const member = await WorkspaceMember.findById(memberId).populate(
         "userId",
         "email"
@@ -817,10 +773,8 @@ export const removeWorkspaceMember = asyncHandler(
         return next(new HttpError("Member not found in this workspace", 404));
       }
 
-      // Store data for activity log before deletion
       const memberEmail = (member.userId as any).email;
 
-      // Send email notification
       try {
         const removedUser = await User.findOne({ email: memberEmail });
         if (removedUser) {
@@ -839,10 +793,8 @@ export const removeWorkspaceMember = asyncHandler(
         console.error("Failed to send removal notification email:", emailError);
       }
 
-      // Remove membership
       await WorkspaceMember.findByIdAndDelete(memberId);
 
-      // Log activity
       await ActivityLog.create({
         entityId: workspace._id,
         entityType: "workspace",

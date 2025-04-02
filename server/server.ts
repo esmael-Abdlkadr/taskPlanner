@@ -4,24 +4,19 @@ import { logger } from "./config/logger";
 import http from "http";
 import { connectDb, disconnectDb } from "./config/db";
 
-
 dotenv.config();
 
 const port = process.env.PORT || 3000;
 
 const startServer = async () => {
   try {
-    // Connect to database
     await connectDb();
-    
 
-    // Start the server
     const server = http.createServer(app);
     server.listen(port, () => {
       logger.info(`Server is listening on port ${port}`);
     });
 
-    // Graceful shutdown
     const gracefulShutdown = async () => {
       logger.info("Shutting down server...");
       server.close(async () => {

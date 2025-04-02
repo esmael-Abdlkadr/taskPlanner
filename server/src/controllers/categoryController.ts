@@ -4,7 +4,6 @@ import HttpError from "../utils/httpError";
 import { Category } from "../models/Category";
 import { z } from "zod";
 
-// Validation schema for creating/updating categories
 const categorySchema = z.object({
   name: z
     .string()
@@ -29,7 +28,6 @@ export const getCategories = asyncHandler(
     }
 
     try {
-      // Get default categories and user's custom categories
       const categories = await Category.find({
         $or: [{ isDefault: true }, { ownerId: userId }],
       }).sort({ isDefault: -1, name: 1 });
@@ -68,9 +66,8 @@ export const createCategory = asyncHandler(
     const { name, icon, color, description } = parsedResult.data;
 
     try {
-      // Check if user already has a category with this name
       const existingCategory = await Category.findOne({
-        name: { $regex: new RegExp(`^${name}$`, "i") }, // Case-insensitive name comparison
+        name: { $regex: new RegExp(`^${name}$`, "i") }, 
         ownerId: userId,
       });
 
@@ -79,8 +76,6 @@ export const createCategory = asyncHandler(
           new HttpError("You already have a category with this name", 400)
         );
       }
-
-      // Create the category
       const category = await Category.create({
         name,
         icon,
@@ -122,20 +117,17 @@ export const updateCategory = asyncHandler(
     }
 
     try {
-      // Get the existing category
       const category = await Category.findById(id);
       if (!category) {
         return next(new HttpError("Category not found", 404));
       }
-
-      // Check if it's a default category (can't modify those)
       if (category.isDefault) {
         return next(
           new HttpError("Default categories cannot be modified", 403)
         );
       }
 
-      // Check ownership
+    
       if (category.ownerId.toString() !== userId.toString()) {
         return next(
           new HttpError(
@@ -145,7 +137,7 @@ export const updateCategory = asyncHandler(
         );
       }
 
-      // Update the category
+
       const updatedCategory = await Category.findByIdAndUpdate(
         id,
         parsedResult.data,
@@ -181,18 +173,15 @@ export const deleteCategory = asyncHandler(
     }
 
     try {
-      // Get the category
       const category = await Category.findById(id);
       if (!category) {
         return next(new HttpError("Category not found", 404));
       }
-
-      // Check if it's a default category (can't delete those)
       if (category.isDefault) {
         return next(new HttpError("Default categories cannot be deleted", 403));
       }
 
-      // Check ownership
+   
       if (category.ownerId.toString() !== userId.toString()) {
         return next(
           new HttpError(
@@ -202,7 +191,7 @@ export const deleteCategory = asyncHandler(
         );
       }
 
-      // Delete the category
+
       await Category.findByIdAndDelete(id);
 
       res.status(200).json({

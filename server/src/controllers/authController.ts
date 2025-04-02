@@ -46,13 +46,13 @@ export const signup = asyncHandler(
         otpExpires,
       });
 
-      // Create personal workspace for the user
+
       const personalWorkspace = await Workspace.create({
         name: `${firstName}'s Workspace`,
         description: "Your personal workspace",
         ownerId: user._id,
         isPersonal: true,
-        color: "#6366F1", // Default indigo color
+        color: "#6366F1", 
         icon: "home",
       });
 
@@ -81,7 +81,7 @@ export const signup = asyncHandler(
       } catch (emailError) {
         console.error("Error sending email:", emailError);
 
-        // Still return success but note email failed
+ 
         res.status(201).json({
           status: "success",
           message:
@@ -117,37 +117,31 @@ export const verifyOtp = asyncHandler(
       if (!user) {
         return next(new HttpError("No account found with this email", 404));
       }
-      // Check if OTP exists and is not expired
       if (!user.otp || !user.otpExpires) {
         return next(
           new HttpError("Verification code not found or already used", 400)
         );
       }
-      // Check if OTP is expired
+   
       if (user.otpExpires < new Date()) {
         return next(new HttpError("Verification code has expired", 400));
       }
-      // Check if OTP matches
+    
       if (user.otp !== otp) {
         return next(new HttpError("Invalid verification code", 400));
       }
 
-      // Mark email as verified
+
       user.emailVerified = true;
 
-      // Clear OTP fields
+    
       user.otp = undefined;
       user.otpExpires = undefined;
 
-      // Save the user
       await user.save({ validateBeforeSave: false });
-
-      // Generate token for automatic login after verification
       const accessToken = generateAccessToken({
         id: user._id as unknown as string | number,
       });
-
-      // Get user data without sensitive fields
       const userData = user.toObject();
       if ("password" in userData) {
         delete (userData as { password?: string }).password;
@@ -257,11 +251,11 @@ export const login = asyncHandler(
       id: user._id as unknown as string | number,
     });
 
-    // Get user's workspaces
+
     const workspaces = await Workspace.find({
       $or: [
         { ownerId: user._id },
-        // Would include workspaces where user is a member via WorkspaceMember model
+  
       ],
     })
       .sort({ isPersonal: -1, updatedAt: -1 })
@@ -294,7 +288,6 @@ export const resetPassword = asyncHandler(
     }
 
     const resetToken = Crypto.createHash("sha256").update(token).digest("hex");
-    // find user with reset token and check if token is valid.
     const user = await User.findOne({
       passwordResetToken: resetToken,
       passwordResetExpires: { $gt: new Date() },
@@ -332,19 +325,15 @@ export const forgotPassword = asyncHandler(
 
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
-      // For security reasons, still return success even if user doesn't exist
       return res.status(200).json({
         status: "success",
         message:
           "If an account with that email exists, we've sent password reset instructions",
       });
     }
-
-    // Generate reset token
     const resetToken = user.createPasswordResetToken();
     await user.save({ validateBeforeSave: false });
 
-    // Create password reset URL - should be configurable in production
     const resetUrl = `${
       process.env.FRONTEND_URL || "http://localhost:5173"
     }/reset-password/${resetToken}`;
@@ -367,7 +356,6 @@ export const forgotPassword = asyncHandler(
           "If an account with that email exists, we've sent password reset instructions",
       });
     } catch (error) {
-      // Reset the token fields if email fails
       user.passwordResetToken = undefined;
       user.passwordResetExpires = undefined;
       await user.save({ validateBeforeSave: false });
@@ -389,8 +377,6 @@ export const updateProfile = asyncHandler(
     if (!userId) {
       return next(new HttpError("Authentication required", 401));
     }
-
-    // Only allow specific fields to be updated
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { firstName, lastName },

@@ -5,7 +5,6 @@ import { Comment } from "../models/Comment";
 import { Task } from "../models/Task";
 import { Workspace } from "../models/Workspace";
 import { ActivityLog } from "../models/ActivityLog";
-import { User } from "../models/User";
 import {
   createCommentSchema,
   updateCommentSchema,
@@ -102,7 +101,6 @@ export const createComment = asyncHandler(
 
     console.log("parsedResult.data", parsedResult.data);
     try {
-      // Check if task exists
       const task = await Task.findById(taskId);
       if (!task) {
         return next(new HttpError("Task not found", 404));
@@ -171,7 +169,6 @@ export const createComment = asyncHandler(
         },
       });
 
-      // Send mention notifications if there are mentions
       if (mentions && mentions.length > 0) {
         const authorName = `${user.firstName} ${user.lastName}`;
 
@@ -184,11 +181,11 @@ export const createComment = asyncHandler(
         );
       }
 
-      // Send notification about new comment to task assignee
+   
       if (task.assigneeId && task.assigneeId.toString() !== userId.toString()) {
         const authorName = `${user.firstName} ${user.lastName}`;
 
-        // Process in background - don't wait for email sending to complete
+
         notificationService.sendNewCommentNotification(
           taskId,
           content,
@@ -233,7 +230,7 @@ export const updateComment = asyncHandler(
     const { content, attachments, mentions } = parsedResult.data;
 
     try {
-      // Check if comment exists and belongs to user
+  
       const comment = await Comment.findOne({
         _id: id,
         userId,
@@ -248,25 +245,22 @@ export const updateComment = asyncHandler(
         );
       }
 
-      // Store original mentions for comparison
       const originalMentions = comment.mentions || [];
 
-      // Update the comment
       comment.content = content;
       if (attachments) comment.attachments = attachments;
       if (mentions) comment.mentions = mentions;
       await comment.save();
 
-      // Find new mentions that weren't in the original comment
+
       const newMentions = mentions
         ? mentions.filter((m) => !originalMentions.includes(m))
         : [];
 
-      // Send notifications for new mentions if any
       if (newMentions.length > 0) {
         const authorName = `${user.firstName} ${user.lastName}`;
 
-        // Process in background
+   
         notificationService.sendMentionNotifications(
           newMentions,
           content,
@@ -305,7 +299,6 @@ export const deleteComment = asyncHandler(
     }
 
     try {
-      // Check if comment exists and belongs to user
       const comment = await Comment.findOne({
         _id: id,
         userId,
@@ -319,13 +312,10 @@ export const deleteComment = asyncHandler(
           )
         );
       }
-
-      // If it's a parent comment, delete all replies
       if (!comment.parentId) {
         await Comment.deleteMany({ parentId: comment._id });
       }
 
-      // Delete the comment
       await Comment.findByIdAndDelete(id);
 
       res.status(200).json({

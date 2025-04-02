@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import swaggerJsDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import authRoutes from "./src/routes/authRoute";
 import workspaceRoutes from "./src/routes/workSpaceRoute";
@@ -13,9 +12,8 @@ import swaggerSpec from "./swaggerOption";
 
 const app = express();
 
-// Simplified CORS configuration that works with curl and Swagger
 app.use(cors({
-  origin: true, // Allow all origins
+  origin: true, 
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true

@@ -22,17 +22,15 @@ const swaggerDefinition = {
   ],
   servers: [
     {
-      url: "http://localhost:5000",
+      url: "https://taskplanner-api.up.railway.app",
     },
   ],
 };
 
-// Options for the swagger docs
 const options = {
   swaggerDefinition,
   apis: ["./src/routes/*.ts"],
 };
 
-// Initialize swagger-jsdoc
 const swaggerSpec = swaggerJSDoc(options);
 export default swaggerSpec;
