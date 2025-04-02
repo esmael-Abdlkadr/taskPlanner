@@ -56,7 +56,6 @@ export const useCreateTask = () => {
         queryKey: ["workspace-tasks", variables.workspaceId],
       });
 
-      // If it's a subtask, invalidate parent's subtasks
       if (variables.parentId) {
         queryClient.invalidateQueries({
           queryKey: ["subtasks", variables.parentId],

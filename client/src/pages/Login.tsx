@@ -17,7 +17,6 @@ import Checkbox from "../components/ui/checkbox";
 import { motion } from "framer-motion";
 import { LogIn, ArrowRight } from "lucide-react";
 
-// Form validation schema
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),

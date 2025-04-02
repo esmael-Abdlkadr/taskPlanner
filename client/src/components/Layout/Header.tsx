@@ -54,23 +54,21 @@ const Header = ({
     }`;
   };
 
-  // Focus search input when search is shown
   useEffect(() => {
     if (showSearch && searchInputRef.current) {
       searchInputRef.current.focus();
     }
   }, [showSearch]);
 
-  // Handle logout
+ 
   const handleLogout = () => {
     logout();
   };
 
-  // Get page title from pathname
+
   const getPageTitle = () => {
     if (pathname === "/dashboard") return "Dashboard";
     if (pathname.startsWith("/workspaces/")) {
-      // We could get the actual workspace name from state/store here
       return "Workspace";
     }
     if (pathname.startsWith("/tasks/")) {
@@ -79,14 +77,14 @@ const Header = ({
     return "TaskNest";
   };
 
-  // Toggle theme
+
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
   return (
     <header className="sticky top-0 z-10 flex h-16 w-full items-center justify-between border-b border-gray-200 bg-white px-4 dark:border-gray-800 dark:bg-gray-800">
-      {/* Left section: Mobile menu button, breadcrumb/title */}
+    
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
@@ -116,15 +114,14 @@ const Header = ({
         </div>
       </div>
 
-      {/* Mobile title (centered) */}
+
       <div className="absolute left-0 right-0 flex justify-center md:hidden">
         <h1 className="text-lg font-semibold">{getPageTitle()}</h1>
       </div>
 
-      {/* Right section: Search, notifications, theme toggle, user menu */}
+
       <div className="flex items-center gap-2">
-        {/* Search */}
-        <div
+            <div
           className={cn("relative", showSearch ? "w-full md:w-64" : "w-auto")}
         >
           {showSearch ? (

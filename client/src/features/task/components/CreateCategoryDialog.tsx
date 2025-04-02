@@ -10,7 +10,6 @@ interface CreateCategoryDialogProps {
   onSuccess?: (category: Category) => void;
 }
 
-// Predefined icons for selection
 const AVAILABLE_ICONS = [
   { name: "user", emoji: "👤" },
   { name: "briefcase", emoji: "💼" },
@@ -44,7 +43,6 @@ export const CreateCategoryDialog = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const createCategory = useCreateCategory();
 
-  // Handle clicks outside the modal to close it
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -64,7 +62,6 @@ export const CreateCategoryDialog = ({
     };
   }, [open]);
 
-  // Prevent scrolling when modal is open
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
@@ -95,7 +92,7 @@ export const CreateCategoryDialog = ({
         onSuccess(newCategory);
       }
     } catch (error) {
-      // Error is handled by the mutation hook
+      console.log("error", error);
     }
   };
 
@@ -112,7 +109,6 @@ export const CreateCategoryDialog = ({
     onOpenChange(false);
   };
 
-  // If the modal is closed, don't render anything
   if (!open) return null;
 
   return (

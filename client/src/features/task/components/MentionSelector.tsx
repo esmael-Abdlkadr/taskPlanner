@@ -32,7 +32,7 @@ export const MentionSelector = ({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Fetch users matching the query
+
   useEffect(() => {
     if (!isOpen || !workspaceId) return;
 
@@ -56,7 +56,7 @@ export const MentionSelector = ({
     fetchUsers();
   }, [isOpen, workspaceId, query]);
 
-  // Handle keyboard navigation
+
   useEffect(() => {
     if (!isOpen) return;
 

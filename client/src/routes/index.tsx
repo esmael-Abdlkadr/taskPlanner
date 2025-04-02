@@ -14,23 +14,25 @@ const ForgotPassword = lazy(() => import("../pages/ForogtPassword"));
 const ResetPassword = lazy(() => import("../pages/ResetPassword"));
 const Dashboard = lazy(() => import("../pages/Dashboard/Dashboard"));
 const Favorites = lazy(() => import("../pages/Favorite"));
-const Workspace = lazy(() => import('../pages/workspace/Workspace'));
-const TaskList= lazy(() => import('../pages/tasks/Tasks'));
-const TaskDetail = lazy(() => import('../pages/tasks/TaskDetail'));
-const WorkspaceSettings = lazy(() => import('../pages/workspace/WorkspaceSetting'));
-const WorkspaceList= lazy(() => import('../pages/workspace/WorkspaceList'));
+const Workspace = lazy(() => import("../pages/workspace/Workspace"));
+const TaskList = lazy(() => import("../pages/tasks/Tasks"));
+const TaskDetail = lazy(() => import("../pages/tasks/TaskDetail"));
+const WorkspaceSettings = lazy(
+  () => import("../pages/workspace/WorkspaceSetting")
+);
+const WorkspaceList = lazy(() => import("../pages/workspace/WorkspaceList"));
+const TimePromodoDashbaord = lazy(
+  () => import("../pages/TimePromodoDashbaord")
+);
 // const NotFound = lazy(() => import('@/pages/NotFound/NotFound'));
 
-// Loading Spinner
 const LoadingSpinner = () => (
   <div className="flex h-screen w-screen items-center justify-center">
     <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
   </div>
 );
 
-// Create router
 const router = createBrowserRouter([
-  // Landing page (public)
   {
     path: "/",
     element: (
@@ -83,36 +85,39 @@ const router = createBrowserRouter([
       </Suspense>
     ),
     children: [
-  
       {
         path: "/dashboard",
         element: <Dashboard />,
       },
       {
         path: "/tasks",
-        element: <TaskList />
+        element: <TaskList />,
       },
       {
-        path: 'tasks/:taskId',
-        element: <TaskDetail />
+        path: "tasks/:taskId",
+        element: <TaskDetail />,
       },
       {
         path: "/workspaces",
-        element: <WorkspaceList />
+        element: <WorkspaceList />,
       },
-        {
-          path: 'workspaces/:workspaceId',
-          element: <Workspace />
-        },
-        {
-          path:"workspaces/:workspaceId/settings",
-          element: <WorkspaceSettings />
-        },
-       
-        {
-          path: 'favorites',
-          element: <Favorites />
-        }
+      {
+        path: "workspaces/:workspaceId",
+        element: <Workspace />,
+      },
+      {
+        path: "workspaces/:workspaceId/settings",
+        element: <WorkspaceSettings />,
+      },
+
+      {
+        path: "favorites",
+        element: <Favorites />,
+      },
+      {
+        path: "/time-promodo",
+        element: <TimePromodoDashbaord />,
+      },
     ],
   },
 

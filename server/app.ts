@@ -7,21 +7,23 @@ import taskRoutes from "./src/routes/taskRoute";
 import commentRoutes from "./src/routes/commentRoute";
 import tagRoutes from "./src/routes/tagRoute";
 import categoryRoutes from "./src/routes/categoryRoute";
+import timeEntryRoutes from "./src/routes/timeEntryRoute";
 import errorHandler from "./src/middleware/globalErrorHandler";
 import swaggerSpec from "./swaggerOption";
 
 const app = express();
 
-app.use(cors({
-  origin: true, 
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get("/swagger.json", (req, res) => {
@@ -45,6 +47,7 @@ app.use("/api", taskRoutes);
 app.use("/api", commentRoutes);
 app.use("/api", tagRoutes);
 app.use("/api", categoryRoutes);
+app.use("/api/time-entries", timeEntryRoutes);
 
 app.use(errorHandler);
 

@@ -11,7 +11,7 @@ const Navbar = () => {
   const location = useLocation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
-  // Handle scroll effect
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -21,7 +21,6 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close mobile menu on navigation
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
@@ -60,7 +59,7 @@ const Navbar = () => {
           </Link>
         </div>
 
-        {/* Desktop Navigation */}
+
 
 
         <div className="hidden md:flex items-center gap-4">
@@ -80,7 +79,6 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* Mobile Menu Button */}
         <button
           className="flex items-center justify-center rounded-md p-2.5 text-gray-700 md:hidden dark:text-gray-300"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -93,7 +91,7 @@ const Navbar = () => {
         </button>
       </div>
 
-      {/* Mobile Navigation */}
+
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div

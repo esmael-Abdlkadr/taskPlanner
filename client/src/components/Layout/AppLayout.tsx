@@ -5,6 +5,7 @@ import Header from "./Header";
 import { cn } from "../../lib/utils";
 import { Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { ActiveTimerWidget } from "../../features/promodo/ActiveTimerWidget";
 
 const AppLayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -12,24 +13,18 @@ const AppLayout = () => {
   const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
 
-  // Toggle sidebar collapse state
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
 
-  // Toggle mobile menu
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  // Close mobile menu on location change
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location]);
-
-  // Simulate loading user data if needed
   useEffect(() => {
-    // Here you could load initial data needed for the app
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 500);
@@ -58,7 +53,6 @@ const AppLayout = () => {
         <Sidebar collapsed={sidebarCollapsed} toggleCollapse={toggleSidebar} />
       </div>
 
-      {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
@@ -71,7 +65,6 @@ const AppLayout = () => {
         )}
       </AnimatePresence>
 
-      {/* Mobile sidebar */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
@@ -86,24 +79,22 @@ const AppLayout = () => {
         )}
       </AnimatePresence>
 
-      {/* Main content */}
       <div
         className={cn(
           "flex flex-col flex-1 w-full transition-all duration-300",
           sidebarCollapsed ? "md:ml-16" : "md:ml-64"
         )}
       >
-        {/* Header */}
         <Header
           toggleMobileMenu={toggleMobileMenu}
           toggleSidebar={toggleSidebar}
           sidebarCollapsed={sidebarCollapsed}
         />
 
-        {/* Main content area */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-24">
           <Outlet />
         </main>
+        <ActiveTimerWidget />
       </div>
     </div>
   );

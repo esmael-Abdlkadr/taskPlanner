@@ -1,10 +1,23 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
 import { clearStoredAuth } from "../utils/storage";
 
+const getApiBaseUrl = (): string => {
+  const envApiUrl = import.meta.env.VITE_API_URL;
+  const isProduction = import.meta.env.MODE === "production";
+  if (envApiUrl) {
+    console.log(`Using API URL from environment: ${envApiUrl}`);
+    return envApiUrl;
+  } else if (isProduction) {
+    console.log("Using production API URL");
+    return "https://taskplanner-api.up.railway.app/api";
+  } else {
+    console.log("Using development API URL");
+    return "http://localhost:5000/api";
+  }
+};
+
 const api: AxiosInstance = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_URL ||
-    "https://taskplanner-api.up.railway.app/api",
+  baseURL: getApiBaseUrl(),
   headers: {
     "Content-Type": "application/json",
   },

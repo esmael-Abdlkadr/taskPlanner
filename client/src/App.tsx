@@ -6,7 +6,7 @@ import AppRouter from "./routes";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60 * 1000, // 1 minute
+      staleTime: 60 * 1000,
       refetchOnWindowFocus: false,
       retry: 1,
       refetchOnMount: true,
@@ -26,7 +26,6 @@ function App() {
         <Toaster
           position="top-center"
           toastOptions={{
-
             duration: 4000,
             success: {
               style: {
@@ -48,7 +47,7 @@ function App() {
                 secondary: "#FFFFFF",
               },
             },
-           
+
             style: {
               borderRadius: "8px",
               background: "var(--background)",

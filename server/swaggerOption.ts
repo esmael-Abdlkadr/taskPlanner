@@ -2,9 +2,9 @@ import swaggerJSDoc from "swagger-jsdoc";
 const swaggerDefinition = {
   openapi: "3.0.0",
   info: {
-    title: "Ticket manager API",
+    title: "Task manager API",
     version: "1.0.0",
-    description: "Ticket managment API Documentation",
+    description: "Task managment API Documentation",
   },
   components: {
     securitySchemes: {
@@ -23,6 +23,11 @@ const swaggerDefinition = {
   servers: [
     {
       url: "https://taskplanner-api.up.railway.app",
+      description: "Production server",
+    },
+    {
+      url: "http://localhost:5000",
+      description: "Development server",
     },
   ],
 };

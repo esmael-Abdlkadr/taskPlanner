@@ -2,7 +2,6 @@ import TimeEntryModel from "../models/timeEntiry";
 import asyncHandler from "../utils/asyncHandler";
 import { NextFunction, Request, Response } from "express";
 import HttpError from "../utils/httpError";
-import mongoose from "mongoose";
 
 export const startTime = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -189,7 +188,6 @@ export const getTaskTimeEntries = asyncHandler(
   }
 );
 
-// Get all time entries for a user
 export const getUserTimeEntries = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -225,7 +223,6 @@ export const getUserTimeEntries = asyncHandler(
   }
 );
 
-// Get user's active time entry if any
 export const getActiveTimeEntry = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -246,7 +243,6 @@ export const getActiveTimeEntry = asyncHandler(
   }
 );
 
-// Get time stats/analytics
 export const getTimeStats = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -254,7 +250,6 @@ export const getTimeStats = asyncHandler(
 
       let startDate = new Date();
 
-      // Calculate start date based on period
       switch (period) {
         case "day":
           startDate.setHours(0, 0, 0, 0);
@@ -271,7 +266,6 @@ export const getTimeStats = asyncHandler(
           startDate.setDate(startDate.getDate() - 7);
       }
 
-      // Aggregate total time spent by task
       const taskStats = await TimeEntryModel.aggregate([
         {
           $match: {
@@ -311,7 +305,6 @@ export const getTimeStats = asyncHandler(
         },
       ]);
 
-      // Calculate daily totals
       const dailyStats = await TimeEntryModel.aggregate([
         {
           $match: {

@@ -28,7 +28,7 @@ interface CreateTaskDialogProps {
   onSuccess?: () => void;
 }
 
-// Form validation schema
+
 const createTaskSchema = z.object({
   title: z.string().min(1, "Title is required").max(100),
   description: z.string().optional(),
@@ -48,7 +48,7 @@ export const CreateTaskDialog = ({
   defaultWorkspaceId,
   onSuccess,
 }: CreateTaskDialogProps) => {
-  // Track the current step of the creation process
+
   const [step, setStep] = useState<"category" | "details">("category");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
 
@@ -56,7 +56,7 @@ export const CreateTaskDialog = ({
   const { data: workspacesData, isLoading: workspacesLoading } = useWorkspaces();
   const { data: categories } = useCategories();
 
-  // Extract workspaces array safely - adjust this based on your actual data structure
+
   const workspaces = useMemo(() => {
     if (Array.isArray(workspacesData)) {
       return workspacesData;
@@ -87,10 +87,9 @@ export const CreateTaskDialog = ({
     },
   });
 
-  // Reset form and go back to category selection when dialog opens
+
   useEffect(() => {
     if (open) {
-      // Skip category selection for subtasks
       setStep(parentTaskId ? "details" : "category");
       setSelectedCategoryId(undefined);
       
@@ -109,19 +108,18 @@ export const CreateTaskDialog = ({
     }
   }, [open, reset, defaultWorkspaceId, workspaces, parentTaskId]);
 
-  // When a category is selected, update the form value and move to the next step
+
   const handleCategorySelect = (categoryId: string | undefined) => {
     setSelectedCategoryId(categoryId);
     setValue("categoryId", categoryId);
   };
 
-  // Proceed to task details step
   const handleNextStep = () => {
     setValue("categoryId", selectedCategoryId);
     setStep("details");
   };
 
-  // Go back to category selection step
+
   const handleBackStep = () => {
     setStep("category");
   };
@@ -140,7 +138,6 @@ export const CreateTaskDialog = ({
       {
         onSuccess: () => {
           onOpenChange(false);
-          // Call onSuccess callback if provided
           if (onSuccess) {
             onSuccess();
           }
@@ -149,13 +146,13 @@ export const CreateTaskDialog = ({
     );
   };
 
-  // Current values
+
   const status = watch("status");
   const priority = watch("priority");
   const workspaceId = watch("workspaceId");
   const dueDate = watch("dueDate");
 
-  // Prepare workspace options safely
+
   const workspaceOptions =
     workspaces && Array.isArray(workspaces)
       ? workspaces.map((workspace) => ({
@@ -163,8 +160,7 @@ export const CreateTaskDialog = ({
           label: workspace.name,
         }))
       : [];
-      
-  // Handle close with proper cleanup
+
   const handleClose = () => {
     setStep("category");
     setSelectedCategoryId(undefined);
@@ -289,14 +285,14 @@ export const CreateTaskDialog = ({
               </FormItem>
             </div>
             
-            {/* Show subtask info if this is creating a subtask */}
+          
             {parentTaskId && (
               <div className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-md text-sm">
                 <p>Creating a subtask under the parent task</p>
               </div>
             )}
             
-            {/* Show selected category info */}
+   
             {selectedCategoryId && !parentTaskId && (
               <div className="flex items-center space-x-2 text-sm">
                 <span className="text-gray-500 dark:text-gray-400">Selected Category:</span>
@@ -327,7 +323,7 @@ export const CreateTaskDialog = ({
           </ModalBody>
 
           <ModalFooter>
-            {/* Show back button on details step (if not a subtask) */}
+     
             {step === "details" && !parentTaskId && (
               <Button type="button" variant="outline" onClick={handleBackStep}>
                 Back

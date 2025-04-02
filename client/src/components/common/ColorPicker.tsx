@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 interface ColorPickerProps {
   color: string;
@@ -6,21 +6,24 @@ interface ColorPickerProps {
   disabled?: boolean;
 }
 
-// Predefined colors
 const predefinedColors = [
-  '#6366F1', // Indigo
-  '#8B5CF6', // Purple
-  '#EC4899', // Pink
-  '#EF4444', // Red
-  '#F97316', // Orange
-  '#F59E0B', // Amber
-  '#10B981', // Emerald
-  '#06B6D4', // Cyan
-  '#3B82F6', // Blue
-  '#6B7280', // Gray
+  "#6366F1", // Indigo
+  "#8B5CF6", // Purple
+  "#EC4899", // Pink
+  "#EF4444", // Red
+  "#F97316", // Orange
+  "#F59E0B", // Amber
+  "#10B981", // Emerald
+  "#06B6D4", // Cyan
+  "#3B82F6", // Blue
+  "#6B7280", // Gray
 ];
 
-export const ColorPicker = ({ color, onChange, disabled = false }: ColorPickerProps) => {
+export const ColorPicker = ({
+  color,
+  onChange,
+  disabled = false,
+}: ColorPickerProps) => {
   const [customColor, setCustomColor] = useState(color);
 
   const handleColorClick = (newColor: string) => {
@@ -38,7 +41,7 @@ export const ColorPicker = ({ color, onChange, disabled = false }: ColorPickerPr
   };
 
   return (
-    <div className={`space-y-4 ${disabled ? 'opacity-60' : ''}`}>
+    <div className={`space-y-4 ${disabled ? "opacity-60" : ""}`}>
       <div className="flex flex-wrap gap-3">
         {predefinedColors.map((presetColor) => (
           <button
@@ -46,7 +49,7 @@ export const ColorPicker = ({ color, onChange, disabled = false }: ColorPickerPr
             type="button"
             onClick={() => handleColorClick(presetColor)}
             className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              color === presetColor ? 'ring-2 ring-offset-2 ring-primary' : ''
+              color === presetColor ? "ring-2 ring-offset-2 ring-primary" : ""
             }`}
             style={{ backgroundColor: presetColor }}
             aria-label={`Select color ${presetColor}`}

@@ -7,7 +7,7 @@ import { motion, useScroll, useTransform, useInView } from "framer-motion";
 import { useRef } from "react";
 import hero from "/hero.jpg";
 
-// Animation variants
+
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0 },
@@ -37,7 +37,7 @@ const popIn = {
 };
 
 const Landing = () => {
-  // Refs for scroll animations
+
   const heroRef = useRef(null);
   const isHeroInView = useInView(heroRef, { once: true });
 
@@ -56,7 +56,7 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 relative">
-      {/* Animated background grid */}
+
       <motion.div
         className="fixed inset-0 -z-10 opacity-30 dark:opacity-10"
         initial={{ opacity: 0 }}
@@ -69,7 +69,7 @@ const Landing = () => {
       <Navbar />
 
       <main className="flex-grow">
-        {/* Hero Section - With Enhanced Animations */}
+  
         <section
           className="relative py-20 lg:py-32 overflow-hidden"
           ref={heroRef}
@@ -194,7 +194,7 @@ const Landing = () => {
                 transition={{ duration: 0.8, delay: 0.3 }}
                 className="relative mx-auto lg:mr-0 w-full max-w-[580px] perspective-1000"
               >
-                {/* Improved hero image container with 3D effect */}
+           
                 <motion.div
                   className="relative z-10 rounded-2xl bg-white p-3 shadow-2xl ring-1 ring-gray-900/10 dark:bg-gray-800 dark:ring-gray-700 aspect-[4/3] overflow-hidden"
                   initial={{ rotateY: 10, rotateX: -10 }}
@@ -216,7 +216,6 @@ const Landing = () => {
                   </motion.div>
                 </motion.div>
 
-                {/* Animated decorative elements */}
                 <motion.div
                   className="absolute -bottom-4 -left-12 -z-10 h-24 w-24 rounded-full bg-indigo-600 blur-2xl opacity-20"
                   animate={{
@@ -242,7 +241,7 @@ const Landing = () => {
                   }}
                 />
 
-                {/* Floating UI elements */}
+            
                 <motion.div
                   className="absolute -right-8 top-1/4 bg-white dark:bg-gray-800 rounded-lg p-2 shadow-lg flex items-center gap-2 z-20"
                   initial={{ opacity: 0, y: 20, rotate: 5 }}
@@ -275,7 +274,7 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* Features Section - Enhanced with better cards and animations */}
+ 
         <section className="py-24 bg-white dark:bg-gray-900" ref={featuresRef}>
           <div className="container px-4 md:px-6">
             <motion.div
@@ -401,7 +400,7 @@ const Landing = () => {
                 </motion.ul>
               </motion.div>
 
-              {/* Feature 2 - Enhanced card */}
+     
               <motion.div
                 variants={popIn}
                 whileHover={{
@@ -477,7 +476,7 @@ const Landing = () => {
                 </motion.ul>
               </motion.div>
 
-              {/* Feature 3 - Enhanced card */}
+            
               <motion.div
                 variants={popIn}
                 whileHover={{
@@ -555,7 +554,7 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* How It Works - With Animation */}
+        {/* How It Works*/}
         <section className="py-24 bg-gray-50 dark:bg-gray-900/50">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center text-center mb-12">
@@ -680,7 +679,7 @@ const Landing = () => {
               </motion.div>
             </motion.div>
 
-            {/* Connection lines between steps */}
+    
             <div className="hidden lg:block relative h-20 mt-8">
               <motion.div
                 className="absolute top-10 left-1/6 right-5/6 h-0.5 bg-indigo-200 dark:bg-indigo-900/50"
@@ -700,9 +699,8 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* Call to Action - Enhanced with animations */}
         <section className="py-24 relative overflow-hidden" ref={ctaRef}>
-          {/* Animated background gradient */}
+      
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-600 opacity-[0.15] dark:opacity-[0.07]"
             animate={{
@@ -815,7 +813,7 @@ const Landing = () => {
 
       <Footer />
 
-      {/* Cursor follower - subtle effect */}
+  
       <motion.div
         className="hidden md:block fixed w-4 h-4 rounded-full bg-indigo-500/20 pointer-events-none z-50"
         animate={{ scale: [1, 1.2, 1] }}

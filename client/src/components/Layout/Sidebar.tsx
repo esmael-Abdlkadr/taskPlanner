@@ -11,6 +11,7 @@ import {
   FolderIcon,
   BriefcaseIcon,
   Users2Icon,
+  Clock,
 } from "lucide-react";
 
 // Import our custom components
@@ -35,85 +36,80 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
   const { activeWorkspace, setActiveWorkspace } = useWorkspaceStore();
 
-  // Fetch workspaces using our custom hook
   const { data: workspaces, isLoading } = useWorkspaces();
-
-  // Helper to check if a route is active
   const isRouteActive = (path: string) => {
-    // Exact match for dashboard
     if (path === "/dashboard" && location.pathname === "/dashboard") {
       return true;
     }
-    
-    // Exact match for specific routes
     if (path === location.pathname) {
       return true;
     }
-
-    // Special case for workspace routes
     if (path.startsWith("/workspaces/") && path !== "/workspaces/all") {
       return location.pathname.startsWith(path);
     }
-    
-    // Special case for workspaces listing
     if (path === "/workspaces" || path === "/workspaces/all") {
-      return location.pathname === "/workspaces" || 
-             location.pathname === "/workspaces/all";
+      return (
+        location.pathname === "/workspaces" ||
+        location.pathname === "/workspaces/all"
+      );
     }
 
     return false;
   };
 
-  // Open workspace when clicking on it
-  const handleWorkspaceClick = (workspace:Workspace) => {
+  const handleWorkspaceClick = (workspace: Workspace) => {
     setActiveWorkspace(workspace);
     navigate(`/workspaces/${workspace._id}`);
   };
 
-  // Navigation items
   const primaryNavItems = [
-    { 
-      label: "Dashboard", 
-      path: "/dashboard", 
-      icon: <LayoutDashboardIcon className="h-5 w-5" /> 
+    {
+      label: "Dashboard",
+      path: "/dashboard",
+      icon: <LayoutDashboardIcon className="h-5 w-5" />,
     },
-    { 
-      label: "Tasks", 
-      path: "/tasks", 
-      icon: <CheckSquareIcon className="h-5 w-5" /> 
+    {
+      label: "Tasks",
+      path: "/tasks",
+      icon: <CheckSquareIcon className="h-5 w-5" />,
     },
-    { 
-      label: "Favorites", 
-      path: "/favorites", 
+    {
+      label: "Favorites",
+      path: "/favorites",
       icon: <StarIcon className="h-5 w-5" />,
-      highlight: true
+      highlight: true,
     },
-    { 
-      label: "Calendar", 
-      path: "/calendar", 
-      icon: <CalendarIcon className="h-5 w-5" /> 
+    {
+      label: "Calendar",
+      path: "/calendar",
+      icon: <CalendarIcon className="h-5 w-5" />,
+    },
+    {
+      label: "Time Tracking",
+      path: "/time-promodo",
+      icon: <Clock size={18} />,
     },
   ];
 
   const footerNavItems = [
-    { 
-      label: "Settings", 
-      path: "/settings", 
-      icon: <SettingsIcon className="h-5 w-5" /> 
+    {
+      label: "Settings",
+      path: "/settings",
+      icon: <SettingsIcon className="h-5 w-5" />,
     },
-    { 
-      label: "Help & Support", 
-      path: "/help", 
-      icon: <HelpCircleIcon className="h-5 w-5" /> 
-    }
+    {
+      label: "Help & Support",
+      path: "/help",
+      icon: <HelpCircleIcon className="h-5 w-5" />,
+    },
   ];
 
   const renderSidebarItem = (item: {
-    label: string,
-    path: string,
-    icon: React.ReactNode,
-    badge?: number | undefined,
-    highlight?: boolean
+    label: string;
+    path: string;
+    icon: React.ReactNode;
+    badge?: number | undefined;
+    highlight?: boolean;
   }) => {
     const { label, path, icon, badge, highlight } = item;
     const isActive = isRouteActive(path);
@@ -126,7 +122,11 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
             className={`
               w-full justify-start gap-3 font-normal 
               ${collapsed ? "justify-center px-2" : ""} 
-              ${highlight && !isActive ? "text-indigo-600 dark:text-indigo-400" : ""}
+              ${
+                highlight && !isActive
+                  ? "text-indigo-600 dark:text-indigo-400"
+                  : ""
+              }
             `}
           >
             {highlight && !isActive ? (
@@ -134,8 +134,10 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
                 {icon}
                 <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-indigo-500"></span>
               </span>
-            ) : icon}
-            
+            ) : (
+              icon
+            )}
+
             {!collapsed && (
               <>
                 <span className="flex-1 text-left">{label}</span>
@@ -162,7 +164,6 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
   return (
     <>
       <div className="flex h-full w-full flex-col overflow-hidden">
-        {/* App logo and name */}
         <div
           className={`flex h-16 items-center px-4 ${
             collapsed ? "justify-center" : "justify-start"
@@ -214,21 +215,25 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
           )}
         </div>
 
-        {/* Primary navigation */}
         <div className="flex flex-col gap-1 px-3 py-2">
-          {primaryNavItems.map(item => renderSidebarItem(item))}
+          {primaryNavItems.map((item) => renderSidebarItem(item))}
         </div>
 
-        {/* Workspaces section */}
         <div className="mt-2 px-3">
-          <div className={`flex items-center justify-between py-2 ${collapsed ? "justify-center" : ""}`}>
+          <div
+            className={`flex items-center justify-between py-2 ${
+              collapsed ? "justify-center" : ""
+            }`}
+          >
             {!collapsed && (
-              <Link to="/workspaces" className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+              <Link
+                to="/workspaces"
+                className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
                 Workspaces
               </Link>
             )}
-            
-            {/* Workspace Management Dropdown */}
+
             <Dropdown
               trigger={
                 <Button
@@ -243,12 +248,12 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
                 {
                   label: "Create Workspace",
                   icon: <PlusIcon className="mr-2 h-4 w-4" />,
-                  onClick: () => setShowCreateWorkspace(true)
+                  onClick: () => setShowCreateWorkspace(true),
                 },
                 {
                   label: "Manage Workspaces",
                   icon: <FolderIcon className="mr-2 h-4 w-4" />,
-                  onClick: () => navigate('/workspaces')
+                  onClick: () => navigate("/workspaces"),
                 },
                 {
                   label: "Manage Members",
@@ -257,10 +262,10 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
                     if (activeWorkspace) {
                       navigate(`/workspaces/${activeWorkspace._id}/settings`);
                     } else {
-                      navigate('/workspaces');
+                      navigate("/workspaces");
                     }
                   },
-                  disabled: !activeWorkspace
+                  disabled: !activeWorkspace,
                 },
               ]}
             />
@@ -268,7 +273,6 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
 
           <div className="mt-1 space-y-1">
             {isLoading ? (
-              // Loading placeholders
               Array(3)
                 .fill(0)
                 .map((_, i) => (
@@ -283,59 +287,65 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
                   </div>
                 ))
             ) : workspaces && workspaces.length > 0 ? (
-              // Actual workspaces
               workspaces.map((workspace) => {
-                const isActive = location.pathname.includes(`/workspaces/${workspace._id}`);
+                const isActive = location.pathname.includes(
+                  `/workspaces/${workspace._id}`
+                );
                 const isPersonal = workspace.isPersonal;
-                const iconClassName = isActive ? "h-5 w-5 text-white" : "h-5 w-5";
-                
+                const iconClassName = isActive
+                  ? "h-5 w-5 text-white"
+                  : "h-5 w-5";
+
                 return (
-                <Tooltip
-                  key={workspace._id}
-                  content={collapsed ? workspace.name : ""}
-                  side="right"
-                >
-                  <Button
-                    variant={isActive ? "secondary" : "ghost"}
-                    className={`w-full justify-start gap-3 font-normal ${
-                      collapsed ? "justify-center px-2" : ""
-                    }`}
-                    onClick={() => handleWorkspaceClick(workspace)}
+                  <Tooltip
+                    key={workspace._id}
+                    content={collapsed ? workspace.name : ""}
+                    side="right"
                   >
-                    {/* Workspace icon or color indicator */}
-                    <div
-                      className={`h-5 w-5 rounded flex items-center justify-center ${
-                        isPersonal ? "bg-blue-500" : ""
+                    <Button
+                      variant={isActive ? "secondary" : "ghost"}
+                      className={`w-full justify-start gap-3 font-normal ${
+                        collapsed ? "justify-center px-2" : ""
                       }`}
-                      style={{
-                        backgroundColor: isPersonal ? undefined : (workspace.color || "#6366F1")
-                      }}
+                      onClick={() => handleWorkspaceClick(workspace)}
                     >
-                      {isPersonal && <BriefcaseIcon className={iconClassName} size={12} />}
-                    </div>
-                    
-                    {!collapsed && (
-                      <>
-                        <span className="flex-1 truncate text-left">
-                          {workspace.name}
-                        </span>
+                      <div
+                        className={`h-5 w-5 rounded flex items-center justify-center ${
+                          isPersonal ? "bg-blue-500" : ""
+                        }`}
+                        style={{
+                          backgroundColor: isPersonal
+                            ? undefined
+                            : workspace.color || "#6366F1",
+                        }}
+                      >
                         {isPersonal && (
-                          <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 px-1.5 py-0.5 rounded-full">
-                            Personal
-                          </span>
+                          <BriefcaseIcon className={iconClassName} size={12} />
                         )}
-                        {workspace.role && workspace.role !== 'owner' && (
-                          <span className="text-xs bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded-full">
-                            {workspace.role}
+                      </div>
+
+                      {!collapsed && (
+                        <>
+                          <span className="flex-1 truncate text-left">
+                            {workspace.name}
                           </span>
-                        )}
-                      </>
-                    )}
-                  </Button>
-                </Tooltip>
-              )})
+                          {isPersonal && (
+                            <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 px-1.5 py-0.5 rounded-full">
+                              Personal
+                            </span>
+                          )}
+                          {workspace.role && workspace.role !== "owner" && (
+                            <span className="text-xs bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded-full">
+                              {workspace.role}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </Button>
+                  </Tooltip>
+                );
+              })
             ) : (
-              // No workspaces state
               <div
                 className={`flex flex-col items-center py-2 text-sm text-gray-500 dark:text-gray-400 ${
                   collapsed ? "hidden" : ""
@@ -355,13 +365,10 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
           </div>
         </div>
 
-        {/* Push remaining items to bottom */}
         <div className="mt-auto px-3 pb-4">
-          {footerNavItems.map(item => renderSidebarItem(item))}
+          {footerNavItems.map((item) => renderSidebarItem(item))}
         </div>
       </div>
-
-      {/* Create workspace dialog */}
       {showCreateWorkspace && (
         <CreateWorkspaceDialog
           open={showCreateWorkspace}

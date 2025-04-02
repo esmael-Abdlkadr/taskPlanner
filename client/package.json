@@ -34,6 +34,7 @@
     "react-hot-toast": "^2.5.2",
     "react-popper": "^2.3.0",
     "react-router-dom": "^7.4.0",
+    "recharts": "^2.15.1",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.17",
     "tw-animate-css": "^1.2.4",

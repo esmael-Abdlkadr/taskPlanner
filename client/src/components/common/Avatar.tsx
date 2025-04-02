@@ -15,7 +15,6 @@ export const Avatar = ({ src, name, size = "md", className }: AvatarProps) => {
     .toUpperCase()
     .slice(0, 2);
 
-  // Determine size class
   const sizeClass = {
     xxs: "w-4 h-4 text-[8px]",
     xs: "w-6 h-6 text-[10px]",

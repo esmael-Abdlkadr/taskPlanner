@@ -58,7 +58,6 @@ export const CommentForm = ({
   const { data: taskData } = useTask(taskId);
   const workspaceId = taskData?.task?.workspaceId || "";
 
-  // Handle text changes and detect @ symbols to trigger the mention dropdown
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
     setContent(newContent);
@@ -66,7 +65,7 @@ export const CommentForm = ({
     const textarea = e.target;
     const cursorPos = textarea.selectionStart;
 
-    // Look backward from cursor to find an @ symbol
+
     let startPos = cursorPos;
     while (
       startPos > 0 &&

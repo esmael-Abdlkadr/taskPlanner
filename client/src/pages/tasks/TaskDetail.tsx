@@ -24,6 +24,8 @@ import { EditTaskModal } from "./components/EditTasks";
 import { DeleteTaskModal } from "./components/DeleteModal";
 import { Category, TaskStatus } from "../../types/task.types";
 import { CommentsSection } from "../../features/task/components/CommentSection";
+import { TaskTimer } from "../../features/promodo/TaskTimer";
+import { TimeHistory } from "../../features/promodo/TimeHistory";
 
 const formatDate = (dateString: string | undefined | null) => {
   if (!dateString) return null;
@@ -54,6 +56,7 @@ const TaskDetail = () => {
 
   const [editTaskOpen, setEditTaskOpen] = useState(false);
   const [deleteTaskOpen, setDeleteTaskOpen] = useState(false);
+  const [showTimeTracking, setShowTimeTracking] = useState(false);
 
   const { data, isLoading, error } = useTask(taskId || "");
   const task = data?.task;
@@ -91,18 +94,15 @@ const TaskDetail = () => {
     updateTask.mutate({ status: status as TaskStatus });
   };
 
-  // Updated to use the delete modal instead of confirm dialog
   const handleDeleteTask = () => {
     setDeleteTaskOpen(true);
   };
 
-  // Get the right icon color based on the category
   const getCategoryColor = () => {
     if (!task.categoryId) return "#6366F1";
     return isCategory(task.categoryId) ? task.categoryId.color : "#6366F1";
   };
 
-  // Get the right icon based on the category
   const getCategoryIcon = () => {
     if (!task.categoryId || !isCategory(task.categoryId)) return null;
 
@@ -128,14 +128,12 @@ const TaskDetail = () => {
     }
   };
 
-  // Check if the due date is in the past
   const isDueDatePassed = task.dueDate
     ? new Date(task.dueDate) < new Date() && task.status !== "completed"
     : false;
 
   return (
     <div className="container py-8">
-      {/* Back button and task breadcrumb */}
       <div className="mb-6">
         <div className="flex items-center flex-wrap mb-2">
           <Button
@@ -176,7 +174,6 @@ const TaskDetail = () => {
       {/* Task header */}
       <div className="flex items-start justify-between mb-6 flex-wrap md:flex-nowrap gap-4">
         <div className="flex items-start space-x-4">
-          {/* Category icon if available */}
           {task.categoryId && (
             <div
               className="w-12 h-12 flex items-center justify-center rounded-full shrink-0"
@@ -255,13 +252,32 @@ const TaskDetail = () => {
           >
             <Trash2 className="h-5 w-5" />
           </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowTimeTracking(!showTimeTracking)}
+            className="ml-2"
+          >
+            <Clock size={16} className="mr-1" />{" "}
+            {showTimeTracking ? "Hide Timer" : "Track Time"}
+          </Button>
         </div>
       </div>
+      {showTimeTracking && task && (
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2">
+            <TaskTimer taskId={task._id} taskTitle={task.title} />
+          </div>
+          <div>
+            <TimeHistory taskId={task._id} />
+          </div>
+        </div>
+      )}
 
       {/* Task details */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
         <div className="md:col-span-2 space-y-6">
-          {/* Description */}
           <div>
             <h2 className="font-semibold text-lg mb-2">Description</h2>
             <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
@@ -275,7 +291,6 @@ const TaskDetail = () => {
             </div>
           </div>
 
-          {/* Status selector */}
           <div>
             <h2 className="font-semibold text-lg mb-3">Status</h2>
             <div className="flex flex-wrap gap-2">
@@ -303,9 +318,7 @@ const TaskDetail = () => {
         </div>
 
         <div className="space-y-6">
-          {/* Metadata sidebar */}
           <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 space-y-4">
-            {/* Due date - safely formatted */}
             {task.dueDate && (
               <div className="flex items-start">
                 <div className="mr-2 mt-0.5">
@@ -331,7 +344,6 @@ const TaskDetail = () => {
               </div>
             )}
 
-            {/* Assignee - Fixed property name from assignee to assigneeId */}
             {task.assigneeId && (
               <div className="flex items-start">
                 <div className="mr-2 mt-0.5">
@@ -350,7 +362,6 @@ const TaskDetail = () => {
               </div>
             )}
 
-            {/* Hierarchy info */}
             <div className="flex items-start">
               <div className="mr-2 mt-0.5">
                 <ChevronRight className="h-5 w-5 text-gray-400" />
@@ -363,7 +374,6 @@ const TaskDetail = () => {
               </div>
             </div>
 
-            {/* Created & Updated - safely formatted */}
             <div className="flex items-start">
               <div className="mr-2 mt-0.5">
                 <Clock className="h-5 w-5 text-gray-400" />
@@ -384,7 +394,6 @@ const TaskDetail = () => {
               </div>
             </div>
 
-            {/* Completed date - safely check and format if available */}
             {task.completedAt && (
               <div className="flex items-start">
                 <div className="mr-2 mt-0.5">
@@ -412,13 +421,11 @@ const TaskDetail = () => {
         taskId={task._id}
       />
 
-      {/* Delete Task Modal */}
       <DeleteTaskModal
         open={deleteTaskOpen}
         onOpenChange={setDeleteTaskOpen}
         taskId={task._id}
         onSuccess={() => {
-          // Navigate back to tasks list after successful deletion
           navigate("/tasks");
         }}
       />
